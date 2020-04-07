@@ -34,6 +34,7 @@ import net.sf.saxon.lib.StandardErrorListener;
 import net.sf.saxon.s9api.MessageListener;
 import net.sf.saxon.s9api.Processor;
 import net.sf.saxon.s9api.QName;
+import net.sf.saxon.s9api.XdmNode;
 import net.sf.saxon.s9api.XdmValue;
 import net.sf.saxon.s9api.Xslt30Transformer;
 import net.sf.saxon.s9api.XsltCompiler;
@@ -235,11 +236,20 @@ public class MakeDocx
 		}
 		transformer.setStylesheetParameters(parameters);
 		
-		Source docSource = new StreamSource(docFile);
-		log.info("Applying transform to source document " + docFile.getAbsolutePath() + "...");
+		// +++ Raymond [BEGIN CHANGES] 2020-03-27...
+		Source docSource = new StreamSource(docFile.getAbsolutePath());		
+		XdmNode sourceDoc = processor.newDocumentBuilder().build(docSource);
+		transformer.setGlobalContextItem(sourceDoc);
+		log.info("\n");
+		log.info("Applying transform to source document " + sourceDoc.getBaseURI().toString() + "\n");
+//		Source docSource = new StreamSource(docFile);
+//		log.info("Applying transform to source document " + docFile.getAbsolutePath() + "...");
 	
 		@SuppressWarnings("unused")
-		XdmValue result = transformer.applyTemplates(docSource);
+//		XdmValue result = transformer.applyTemplates(docSource);
+		XdmValue result = transformer.applyTemplates(sourceDoc);
+		// +++ Raymond [END CHANGES]
+		
 		log.info("Transform applied.");
 	}
 
@@ -303,15 +313,15 @@ public class MakeDocx
 	public static Options buildOptions() {
 		Options options = new Options();
     	Option input = Option.builder("i")
-						.required(true)
-						.hasArg(true)
-						.desc("The path and filename of the Simple WP XML document or directory containing .swpx files.")
-						.build();
+				.required(true)
+				.hasArg(true)
+				.desc("The path and filename of the Simple WP XML document or directory containing .swpx files.")
+				.build();
     	Option output = Option.builder("o")
-						.required(true)
-						.hasArg(true)
-						.desc("The path and filename of the result DOCX file, or directory to contain generated DOCX files")
-						.build();
+				.required(true)
+				.hasArg(true)
+				.desc("The path and filename of the result DOCX file, or directory to contain generated DOCX files")
+				.build();
     	Option template = Option.builder("t")
 				.required(true)
 				.hasArg(true)

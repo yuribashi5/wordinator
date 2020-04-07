@@ -9,28 +9,29 @@ import javax.xml.namespace.QName;
  * Constants for names and namespaces and such.
  *
  */
-@SuppressWarnings("unused")
+//@SuppressWarnings("unused")
 public final class DocxConstants {
 	
 	public static final String OO_WPML_NS = "http://schemas.openxmlformats.org/wordprocessingml/2006/main";
 	public static final String SIMPLE_WP_NS = "urn:ns:wordinator:simplewpml";
 	
+	// attribute	
 	public static final QName QNAME_INSTR_ATT = new QName(OO_WPML_NS, "instr");
 	public static final QName QNAME_ALIGN_ATT = new QName("", "align");
 	public static final QName QNAME_BOLD_ATT = new QName("", "bold");
-  public static final QName QNAME_BORDER_STYLE_ATT = new QName("", "borderstyle");
-  public static final QName QNAME_BORDER_STYLE_BOTTOM_ATT = new QName("", "borderstylebottom");
-  public static final QName QNAME_BORDER_STYLE_LEFT_ATT = new QName("", "borderstyleleft");
-  public static final QName QNAME_BORDER_STYLE_INSIDE_ATT = new QName("", "borderstyleinside");
-  public static final QName QNAME_BORDER_STYLE_OUTSIDE_ATT = new QName("", "borderstyleoutside");
-  public static final QName QNAME_BORDER_STYLE_RIGHT_ATT = new QName("", "borderstyleright");
-  public static final QName QNAME_BORDER_STYLE_TOP_ATT = new QName("", "borderstyletop");
+	public static final QName QNAME_BORDER_STYLE_ATT = new QName("", "borderstyle");
+	public static final QName QNAME_BORDER_STYLE_BOTTOM_ATT = new QName("", "borderstylebottom");
+	public static final QName QNAME_BORDER_STYLE_LEFT_ATT = new QName("", "borderstyleleft");
+	public static final QName QNAME_BORDER_STYLE_INSIDE_ATT = new QName("", "borderstyleinside");
+	public static final QName QNAME_BORDER_STYLE_OUTSIDE_ATT = new QName("", "borderstyleoutside");
+	public static final QName QNAME_BORDER_STYLE_RIGHT_ATT = new QName("", "borderstyleright");
+	public static final QName QNAME_BORDER_STYLE_TOP_ATT = new QName("", "borderstyletop");
 	public static final QName QNAME_BOTTOM_ATT = new QName("", "bottom");
 	public static final QName QNAME_CALCULATEDWIDTH_ATT = new QName("", "calculatedWidth");
 	public static final QName QNAME_CAPS_ATT = new QName("", "caps");	
-  public static final QName QNAME_CHAPTER_SEPARATOR_ATT = new QName("", "chapter-separator");
-  public static final QName QNAME_CHAPTER_STYLE_ATT = new QName("", "chapter-style");
-  public static final QName QNAME_CODE_ATT = new QName(SIMPLE_WP_NS, "code");
+	public static final QName QNAME_CHAPTER_SEPARATOR_ATT = new QName("", "chapter-separator");
+	public static final QName QNAME_CHAPTER_STYLE_ATT = new QName("", "chapter-style");
+	public static final QName QNAME_CODE_ATT = new QName(SIMPLE_WP_NS, "code");
 	public static final QName QNAME_COLSEP_ATT = new QName("", "colsep");
 	public static final QName QNAME_COLSPAN_ATT = new QName("", "colspan");
 	public static final QName QNAME_COLWIDTH_ATT = new QName("", "colwidth");
@@ -43,10 +44,10 @@ public final class DocxConstants {
 	public static final QName QNAME_FORMAT_ATT = new QName("", "format");
 	public static final QName QNAME_FRAME_ATT = new QName("", "frame");
 	public static final QName QNAME_FRAMESTYLE_ATT = new QName("", "framestyle");
-  public static final QName QNAME_FRAMESTYLE_BOTTOM_ATT = new QName("", "framestyleBottom");
-  public static final QName QNAME_FRAMESTYLE_LEFT_ATT = new QName("", "framestyleLeft");
-  public static final QName QNAME_FRAMESTYLE_RIGHT_ATT = new QName("", "framestyleRight");
-  public static final QName QNAME_FRAMESTYLE_TOP_ATT = new QName("", "framestyleTop");
+	public static final QName QNAME_FRAMESTYLE_BOTTOM_ATT = new QName("", "framestyleBottom");
+	public static final QName QNAME_FRAMESTYLE_LEFT_ATT = new QName("", "framestyleLeft");
+	public static final QName QNAME_FRAMESTYLE_RIGHT_ATT = new QName("", "framestyleRight");
+	public static final QName QNAME_FRAMESTYLE_TOP_ATT = new QName("", "framestyleTop");
 	public static final QName QNAME_GUTTER_ATT = new QName("", "gutter");
 	public static final QName QNAME_HEADER_ATT = new QName("", "header");
 	public static final QName QNAME_HEIGHT_ATT = new QName("", "height");
@@ -54,22 +55,22 @@ public final class DocxConstants {
 	public static final QName QNAME_HREF_ATT = new QName("", "href");
 	public static final QName QNAME_ID_ATT = new QName("", "id");
 	public static final QName QNAME_IMPRINT_ATT = new QName("", "imprint");
-  public static final QName QNAME_INSIDEINDENT_ATT = new QName("", "insideindent");
+	public static final QName QNAME_INSIDEINDENT_ATT = new QName("", "insideindent");
 	public static final QName QNAME_ITALIC_ATT = new QName("", "italic");
 	public static final QName QNAME_LEFT_ATT = new QName("", "left");
-  public static final QName QNAME_LEFTINDENT_ATT = new QName("", "leftindent");
+	public static final QName QNAME_LEFTINDENT_ATT = new QName("", "leftindent");
 	public static final QName QNAME_NAME_ATT = new QName("", "name");
-  public static final QName QNAME_ORIENT_ATT = new QName("", "orient");
+	public static final QName QNAME_ORIENT_ATT = new QName("", "orient");
 	public static final QName QNAME_OUTLINE_ATT = new QName("", "outline");
 	public static final QName QNAME_OUTLINE_LEVEL_ATT = new QName("", "outline-level");
-  public static final QName QNAME_OUTSIDEINDENT_ATT = new QName("", "outsideindent");
+	public static final QName QNAME_OUTSIDEINDENT_ATT = new QName("", "outsideindent");
 	public static final QName QNAME_PAGE_BREAK_BEFORE_ATT = new QName("", "page-break-before");
 	public static final QName QNAME_POSITION_ATT = new QName("", "position");
 	public static final QName QNAME_RIGHT_ATT = new QName("", "right");
-  public static final QName QNAME_RIGHTINDENT_ATT = new QName("", "rightindent");
+	public static final QName QNAME_RIGHTINDENT_ATT = new QName("", "rightindent");
 	public static final QName QNAME_ROWSEP_ATT = new QName("", "rowsep");
 	public static final QName QNAME_ROWSPAN_ATT = new QName("", "rowspan");
-  public static final QName QNAME_SHADE_ATT = new QName("", "shade");
+	public static final QName QNAME_SHADE_ATT = new QName("", "shade");
 	public static final QName QNAME_SHADOW_ATT = new QName("", "shadow");
 	public static final QName QNAME_SMALL_CAPS_ATT = new QName("", "small-caps");
 	public static final QName QNAME_SRC_ATT = new QName("", "src");
@@ -86,7 +87,13 @@ public final class DocxConstants {
 	public static final QName QNAME_VANISH_ATT = new QName("", "vanish");
 	public static final QName QNAME_VERTICAL_ALIGNMENT_ATT = new QName("", "vertical-alignment");
 	public static final QName QNAME_WIDTH_ATT = new QName("", "width");
-	public static final QName QNAME_XSLT_FORMAT_ATT = new QName("", "xslt-format");	 
+	public static final QName QNAME_RULE_WIDTH_ATT = new QName("", "width");
+	public static final QName QNAME_RULE_WIDTH_UNITS_ATT = new QName("", "width_units");
+	public static final QName QNAME_RULE_WEIGHT_ATT = new QName("", "weight");
+	public static final QName QNAME_RULE_WEIGHT_UNITS_ATT = new QName("", "weight_units");
+	public static final QName QNAME_XSLT_FORMAT_ATT = new QName("", "xslt-format");	
+	
+	// element
 	public static final QName QNAME_COLS_ELEM = new QName(SIMPLE_WP_NS, "cols");
 	public static final QName QNAME_COL_ELEM = new QName(SIMPLE_WP_NS, "col");
 	public static final QName QNAME_THEAD_ELEM = new QName(SIMPLE_WP_NS, "thead");
@@ -96,7 +103,8 @@ public final class DocxConstants {
 	public static final QName QNAME_P_ELEM = new QName(SIMPLE_WP_NS, "p");
 	public static final QName QNAME_ROW_ELEM = new QName(SIMPLE_WP_NS, "row");
 	public static final QName QNAME_VSPAN_ELEM = new QName(SIMPLE_WP_NS, "vspan");
-  public static final String PROPERTY_VALUE_CONTINUOUS = "continuous";
-  public static final String PROPERTY_PAGEBREAK = "pagebreak";
-  
+	
+	// property
+	public static final String PROPERTY_VALUE_CONTINUOUS = "continuous";
+	public static final String PROPERTY_PAGEBREAK = "pagebreak";  
 }
