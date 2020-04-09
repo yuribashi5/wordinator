@@ -236,7 +236,7 @@ public class MakeDocx
 		}
 		transformer.setStylesheetParameters(parameters);
 		
-		// +++ Raymond [BEGIN CHANGES] 2020-03-27...
+		// +++ Raymond [BEGIN CHANGES] 2020-03-27...setting GlobalContext
 		Source docSource = new StreamSource(docFile.getAbsolutePath());		
 		XdmNode sourceDoc = processor.newDocumentBuilder().build(docSource);
 		transformer.setGlobalContextItem(sourceDoc);

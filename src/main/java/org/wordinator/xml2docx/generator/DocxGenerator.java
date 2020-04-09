@@ -13,6 +13,9 @@ import java.math.BigInteger;
 import java.net.MalformedURLException;
 import java.net.URISyntaxException;
 import java.net.URL;
+import java.time.LocalDateTime;
+import java.time.ZoneId;
+import java.time.format.DateTimeFormatter;
 import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
@@ -59,6 +62,7 @@ import org.openxmlformats.schemas.wordprocessingml.x2006.main.CTHdrFtrRef;
 import org.openxmlformats.schemas.wordprocessingml.x2006.main.CTHyperlink;
 import org.openxmlformats.schemas.wordprocessingml.x2006.main.CTMarkupRange;
 import org.openxmlformats.schemas.wordprocessingml.x2006.main.CTOnOff;
+import org.openxmlformats.schemas.wordprocessingml.x2006.main.CTP;
 import org.openxmlformats.schemas.wordprocessingml.x2006.main.CTPPr;
 import org.openxmlformats.schemas.wordprocessingml.x2006.main.CTPageNumber;
 import org.openxmlformats.schemas.wordprocessingml.x2006.main.CTPageSz;
@@ -314,7 +318,23 @@ public class DocxGenerator {
 
 		XWPFDocument doc = new XWPFDocument();
 
-		setupStyles(doc, this.templateDoc);
+		//setupStyles(doc, this.templateDoc);
+		
+		// TESTING:
+		try {
+			XWPFStyles newStyles = doc.createStyles();
+			newStyles.setStyles(templateDoc.getStyle());
+			
+		} catch (IOException e) {
+			new DocxGenerationException(e.getClass().getSimpleName() + " reading template DOCX file: " + e.getMessage(), e);
+		} catch (XmlException e) {
+			new DocxGenerationException(
+					e.getClass().getSimpleName() + " Copying styles from template doc: " + e.getMessage(), e);
+		}
+		
+		
+		
+		
 		constructDoc(doc, xml);
 
 		FileOutputStream out = new FileOutputStream(outFile);
@@ -542,6 +562,7 @@ public class DocxGenerator {
 			String format = cursor.getAttributeText(DocxConstants.QNAME_FORMAT_ATT);
 			String chapterSep = cursor.getAttributeText(DocxConstants.QNAME_CHAPTER_SEPARATOR_ATT);
 			String chapterStyle = cursor.getAttributeText(DocxConstants.QNAME_CHAPTER_STYLE_ATT);
+			
 			if (null != format || null != chapterSep || null != chapterStyle || null != start) {
 				CTPageNumber pageNumber = (sectPr.isSetPgNumType() ? sectPr.getPgNumType() : sectPr.addNewPgNumType());
 				if (null != format) {
@@ -950,13 +971,19 @@ public class DocxGenerator {
 				} else if ("object".equals(tagName)) {
 					makeObject(para, cursor);
 				} else if ("page-number-ref".equals(tagName)) {
-					makePageNumberRef(para, cursor);					
+					makePageNumberRef(para, cursor);				
+//				} else if ("doDatetime".equals(tagName)) {
+//					makeDateTime(para, cursor);			
 				} else if ("header-rule".equals(tagName)) {
 					makeHeaderRule(para, cursor);
 				} else if ("footer-rule".equals(tagName)) {
 					makeFooterRule(para, cursor);
 				} else if ("rule".equals(tagName)) {
-					makeRule(para, cursor);
+					makeRule(para, cursor);									
+				} else if ("minitoc".equals(tagName)) {					
+					if(inFile.getName().toString().startsWith("^")) {
+						buildMiniToc(para, cursor);	
+					}					
 					
 				} else {
 					log.warn("Unexpected element {" + namespace + "}:" + tagName + " in <p>. Ignored.");
@@ -1059,6 +1086,24 @@ public class DocxGenerator {
 		
 		cursor.pop();
 	}
+	
+	/**
+	 * date and time: ex. (Created: 2020-04-09 12:54:46 [America/New_York])
+	 * 
+	 */
+	private void makeDateTime(XWPFRun run, XmlCursor cursor) {
+		final String DATE_FORMATTER= "yyyy-MM-dd HH:mm:ss";
+
+		ZoneId zoneId = ZoneId.of("America/New_York");
+		//LocalDateTime now = LocalDateTime.now();
+		LocalDateTime nowZone = LocalDateTime.now(zoneId);
+		DateTimeFormatter formatter = DateTimeFormatter.ofPattern(DATE_FORMATTER);
+        String formatDateTime = nowZone.format(formatter);		
+		run.setText("   (Created: " + formatDateTime + " [" + zoneId.toString() + "])");	
+		run.setFontFamily("Consolas");
+		run.setFontSize(6);
+	}
+
 
 	
 	/**
@@ -1088,12 +1133,36 @@ public class DocxGenerator {
 	 * @param para   Paragraph to add the field to
 	 * @param cursor
 	 */
+//	private void makePageNumberRef(XWPFParagraph para, XmlCursor cursor) {
+//
+//		String fieldData = "PAGE";
+//		makeSimpleField(para, fieldData);
+//
+//	}
+	
+	
 	private void makePageNumberRef(XWPFParagraph para, XmlCursor cursor) {
-
-		String fieldData = "PAGE";
-		makeSimpleField(para, fieldData);
-
+		// PAGE of NUMPAGES...
+		XWPFRun run=para.createRun();		
+		run.addCarriageReturn();
+		para.setAlignment(ParagraphAlignment.CENTER);
+	
+		run = para.createRun();
+		run.setText("Page ");
+		para.getCTP().addNewFldSimple().setInstr("PAGE \\* MERGEFORMAT");
+		run = para.createRun();  
+		run.setText(" of ");
+		para.getCTP().addNewFldSimple().setInstr("NUMPAGES \\* MERGEFORMAT");		
+	}	
+	
+	
+	private void buildMiniToc(XWPFParagraph para, XmlCursor cursor) {
+		CTP ctP = para.getCTP();
+		CTSimpleField toc = ctP.addNewFldSimple();
+		toc.setInstr("TOC \\h");
+		toc.setDirty(STOnOff.TRUE);
 	}
+	
 	
 	/**
 	 * Construct a Header rule or horizontal line.
@@ -1157,7 +1226,7 @@ public class DocxGenerator {
 		handleFormattingAttributes(run, xml);
 
 		cursor.toLastAttribute();
-		cursor.toNextToken(); // Should be first text or subelement.
+		cursor.toNextToken(); // Should be first text or sub-element.
 		// In this loop, each different token handler is responsible for positioning
 		// the cursor past the thing that was handled such that the only END token
 		// is the end for the run element being processed.
@@ -1178,6 +1247,8 @@ public class DocxGenerator {
 					makeSymbol(run, cursor);
 				} else if ("tab".equals(name)) {
 					makeTab(run, cursor);
+				} else if ("doDateTime".equals(name)) {
+					makeDateTime(run, cursor);
 				} else {
 					log.error("makeRun(); Unexpected element {" + namespace + "}:" + name + ". Skipping.");
 					cursor.toEndToken(); // Skip this element.
@@ -2320,23 +2391,21 @@ public class DocxGenerator {
 		}
 	}
 
-	private void setupStyles(XWPFDocument doc, XWPFDocument templateDoc) throws DocxGenerationException {
-		// Load template. For now this is hard coded but will need to be
-		// parameterized
-
-		// Copy the template's styles to result document:
-
-		try {
-			XWPFStyles newStyles = doc.createStyles();
-			newStyles.setStyles(templateDoc.getStyle());
-		} catch (IOException e) {
-			new DocxGenerationException(e.getClass().getSimpleName() + " reading template DOCX file: " + e.getMessage(),
-					e);
-		} catch (XmlException e) {
-			new DocxGenerationException(
-					e.getClass().getSimpleName() + " Copying styles from template doc: " + e.getMessage(), e);
-		}
-	}
+//	private void setupStyles(XWPFDocument doc, XWPFDocument templateDoc) throws DocxGenerationException {
+//		// Load template. For now this is hard coded but will need to be parameterized
+//		
+//		// Copy the template's styles to result document:
+//
+//		try {
+//			XWPFStyles newStyles = doc.createStyles();
+//			newStyles.setStyles(templateDoc.getStyle());
+//		} catch (IOException e) {
+//			new DocxGenerationException(e.getClass().getSimpleName() + " reading template DOCX file: " + e.getMessage(), e);
+//		} catch (XmlException e) {
+//			new DocxGenerationException(
+//					e.getClass().getSimpleName() + " Copying styles from template doc: " + e.getMessage(), e);
+//		}
+//	}
 
 	/**
 	 * Set up any custom styles.
