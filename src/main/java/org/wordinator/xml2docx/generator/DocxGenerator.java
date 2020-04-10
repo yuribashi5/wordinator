@@ -1191,6 +1191,7 @@ public class DocxGenerator {
 	 * @param fieldData The field data, e.g. "PAGE", "DATE", etc. See 17.16 Fields
 	 *                  and Hyperlinks.
 	 */
+	@SuppressWarnings("unused")
 	private void makeSimpleField(XWPFParagraph para, String fieldData) {
 		CTSimpleField ctField = para.getCTP().addNewFldSimple();
 		ctField.setInstr(fieldData);

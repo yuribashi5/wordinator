@@ -13,8 +13,10 @@ public class RowSpanManager {
 
 	private Map<Integer, Integer> columns = new HashMap<Integer, Integer>();
 
+	@SuppressWarnings("deprecation")
 	public void addColumn(int cellCtr, int spanval) {
 		this.columns.put(new Integer(cellCtr), new Integer(spanval));
+				
 		// Account for the first cell of the span.
 		includeCell(cellCtr);
 	}
