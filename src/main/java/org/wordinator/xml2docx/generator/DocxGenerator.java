@@ -727,7 +727,7 @@ public class DocxGenerator {
 					}
 
 				} else {
-					log.warn("Unexpected element {" + namespace + "}:" + tagName
+					log.warn("constructHeadersAndFooters(): Unexpected element {" + namespace + "}:" + tagName
 							+ " in <headers-and-footers>. Ignored.");
 				}
 
@@ -895,6 +895,8 @@ public class DocxGenerator {
 	 * @return Paragraph (should be same object as passed in).
 	 */
 	private XWPFParagraph makeParagraph(XWPFParagraph p, XmlCursor cursor) throws DocxGenerationException {
+
+//		log.info("makeParagraph(p;cursor)...returning makeParagraph(p, cursor, null)...");
 		return makeParagraph(p, cursor, null);
 	}
 
@@ -983,10 +985,15 @@ public class DocxGenerator {
 				} else if ("minitoc".equals(tagName)) {					
 					if(inFile.getName().toString().startsWith("^")) {
 						buildMiniToc(para, cursor);	
-					}					
+					}
+				} else if ("rule".equals(tagName)) {
+					makeRule(para, cursor);
+					
+				} else if ("p".equals(tagName)) {
+						makeParagraph(para, cursor);			
 					
 				} else {
-					log.warn("Unexpected element {" + namespace + "}:" + tagName + " in <p>. Ignored.");
+					log.warn("makeParagraph(p;cursor;map): Unexpected element {" + namespace + "}:" + tagName + " in <p>. Ignored.");
 				}
 			} while (cursor.toNextSibling());
 		}
@@ -1251,7 +1258,7 @@ public class DocxGenerator {
 				} else if ("doDateTime".equals(name)) {
 					makeDateTime(run, cursor);
 				} else {
-					log.error("makeRun(); Unexpected element {" + namespace + "}:" + name + ". Skipping.");
+					log.error("makeRun(): Unexpected element {" + namespace + "}:" + name + ". Skipping.");
 					cursor.toEndToken(); // Skip this element.
 				}
 				cursor.toNextToken();
