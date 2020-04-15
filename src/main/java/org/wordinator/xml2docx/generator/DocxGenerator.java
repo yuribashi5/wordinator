@@ -982,9 +982,10 @@ public class DocxGenerator {
 					makeFooterRule(para, cursor);
 				} else if ("rule".equals(tagName)) {
 					makeRule(para, cursor);									
-				} else if ("minitoc".equals(tagName)) {					
-					if(inFile.getName().toString().startsWith("^")) {
-						buildMiniToc(para, cursor);	
+				} else if ("minitoc".equals(tagName)) {	
+					if(cursor.getTextValue() != null) {
+						String instr = cursor.getTextValue();
+						buildMiniToc(para, cursor, instr);	
 					}
 				} else if ("rule".equals(tagName)) {
 					makeRule(para, cursor);
@@ -1163,10 +1164,10 @@ public class DocxGenerator {
 	}	
 	
 	
-	private void buildMiniToc(XWPFParagraph para, XmlCursor cursor) {
+	private void buildMiniToc(XWPFParagraph para, XmlCursor cursor, String instr) {
 		CTP ctP = para.getCTP();
 		CTSimpleField toc = ctP.addNewFldSimple();
-		toc.setInstr("TOC \\h");
+		toc.setInstr(instr);
 		toc.setDirty(STOnOff.TRUE);
 	}
 	

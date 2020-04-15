@@ -438,6 +438,7 @@
           <ref name="image"/>
           <ref name="page-number-ref"/>
           <ref name="run"/>
+        	<ref name="field-run"/>
           <ref name="object"/>
         </choice>
       </zeroOrMore>
@@ -848,6 +849,21 @@
       <ref name="id.att"/>
     </element>
   </define>
+	
+	    
+  <define name="field-run">
+<!-- Example of what this becomes in an xwpfdocument: "<w:fldSimple w:instr="PAGE \* MERGEFORMAT"/>" -->
+    <element name="field" ns="urn:ns:wordinator:simplewpml">
+      <a:documentation>
+        <p>Used to create a 'field' run. (w:fldSimple)</p>s
+        <p>The contents becomes the value of the (w:instr)</p>
+      </a:documentation>
+    	<oneOrMore>
+    		<text/>
+    	</oneOrMore>>
+    </element>
+  </define>
+	
   
   <define name="fn">
     <element name="fn" ns="urn:ns:wordinator:simplewpml">
