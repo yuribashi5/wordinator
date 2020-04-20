@@ -8,6 +8,10 @@ public class Measurement {
 	
 	public final static int POINTS_PER_INCH = 72;
 	private static final int POINTS_PER_PICA = 12;
+	
+	public static boolean isNumeric(String str) {
+	  return str.matches("-?\\d+(\\.\\d+)?");  //match a number with optional '-' and decimal.
+	}
 
 	/**
 	 * Calculate the number of pixels represented by the specified value.

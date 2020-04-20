@@ -486,8 +486,8 @@ public class DocxGenerator {
 		cursor.pop();
 	}
 
+	
 	private void setPageSize(XmlCursor cursor, CTSectPr sectPr) {
-
 		CTPageSz pageSize = (sectPr.isSetPgSz() ? sectPr.getPgSz() : sectPr.addNewPgSz());
 		String codeValue = cursor.getAttributeText(DocxConstants.QNAME_CODE_ATT);
 		if (codeValue != null) {
@@ -525,6 +525,7 @@ public class DocxGenerator {
 		}
 	}
 
+	
 	/**
 	 * Set up page sequence properties for the entire document, including page
 	 * geometry, numbering, and headers and footers.
@@ -555,6 +556,7 @@ public class DocxGenerator {
 
 	}
 
+	
 	private void setPageNumberProperties(XmlCursor cursor, CTSectPr sectPr) {
 		cursor.push();
 		if (cursor.toChild(new QName(DocxConstants.SIMPLE_WP_NS, "page-number-properties"))) {
@@ -973,9 +975,7 @@ public class DocxGenerator {
 				} else if ("object".equals(tagName)) {
 					makeObject(para, cursor);
 				} else if ("page-number-ref".equals(tagName)) {
-					makePageNumberRef(para, cursor);				
-//				} else if ("doDatetime".equals(tagName)) {
-//					makeDateTime(para, cursor);			
+					makePageNumberRef(para, cursor);
 				} else if ("header-rule".equals(tagName)) {
 					makeHeaderRule(para, cursor);
 				} else if ("footer-rule".equals(tagName)) {
@@ -990,6 +990,7 @@ public class DocxGenerator {
 				} else if ("rule".equals(tagName)) {
 					makeRule(para, cursor);
 					
+				// handle nested paragraphs (so DocBook-ish)...	
 				} else if ("p".equals(tagName)) {
 						makeParagraph(para, cursor);			
 					
@@ -1002,6 +1003,84 @@ public class DocxGenerator {
 		cursor.pop();
 		return para;
 	}
+
+	/**
+	 * Construct a run within a paragraph.
+	 * 
+	 * @param para The output paragraph to add the run to.
+	 * @param xml  The <run> element.
+	 */
+	private void makeRun(XWPFParagraph para, XmlObject xml) throws DocxGenerationException {
+		XmlCursor cursor = xml.newCursor();
+
+		//String tagname = cursor.getName().getLocalPart(); // For debugging
+
+		XWPFRun run = para.createRun();
+		String styleName = cursor.getAttributeText(DocxConstants.QNAME_STYLE_ATT);
+		String styleId = cursor.getAttributeText(DocxConstants.QNAME_STYLEID_ATT);
+
+		if (null != styleName && null == styleId) {
+			// Look up the style by name:
+			XWPFStyle style = para.getDocument().getStyles().getStyleWithName(styleName);
+			if (null != style) {
+				styleId = style.getStyleId();
+			}
+		}
+
+		if (null != styleId) {
+			run.setStyle(styleId);
+		}
+
+		handleFormattingAttributes(run, xml);
+
+		cursor.toLastAttribute();
+		cursor.toNextToken(); // Should be first text or sub-element.
+		// In this loop, each different token handler is responsible for positioning
+		// the cursor past the thing that was handled such that the only END token
+		// is the end for the run element being processed.
+		while (TokenType.END != cursor.currentTokenType()) {
+			// TokenType tokenType = cursor.currentTokenType(); // For debugging
+			if (cursor.isText()) {
+				run.setText(cursor.getTextValue());
+				cursor.toNextToken();
+			} else if (cursor.isAttr()) {
+				// Ignore attributes in this context.
+			} else if (cursor.isStart()) {
+				// Handle element within run
+				String name = cursor.getName().getLocalPart();
+				String namespace = cursor.getName().getNamespaceURI();
+				if ("break".equals(name)) {
+					makeBreak(run, cursor);
+				} else if ("symbol".equals(name)) {
+					makeSymbol(run, cursor);
+				} else if ("tab".equals(name)) {
+					makeTab(run, cursor);
+				} else if ("doDateTime".equals(name)) {
+					makeDateTime(run, cursor);
+				} else {
+					log.error("makeRun(): Unexpected element {" + namespace + "}:" + name + ". Skipping.");
+					cursor.toEndToken(); // Skip this element.
+				}
+				cursor.toNextToken();
+			} else if (cursor.isComment() || cursor.isProcinst()) {
+				// Silently ignore
+				// FIXME: Not sure if we need to do more to skip a comment or processing
+				// instruction.
+				cursor.toNextToken();
+			} else {
+				// What else could there be?
+				if (cursor.getName() != null) {
+					log.error("makeRun(): Unhanded XML token " + cursor.getName().getLocalPart());
+				} else {
+					log.error("makeRun(): Unhanded XML token " + cursor.currentTokenType());
+				}
+				cursor.toNextToken();
+			}
+		}
+
+		cursor.pop();
+	}
+	
 	
 	// This is an initial "Quick and Dirty" stab to manage <rule/> (not even close to ideal)
 	private void makeRule(XWPFParagraph para, XmlCursor cursor) throws DocxGenerationException {
@@ -1205,82 +1284,6 @@ public class DocxGenerator {
 		ctField.setInstr(fieldData);
 	}
 
-	/**
-	 * Construct a run within a paragraph.
-	 * 
-	 * @param para The output paragraph to add the run to.
-	 * @param xml  The <run> element.
-	 */
-	private void makeRun(XWPFParagraph para, XmlObject xml) throws DocxGenerationException {
-		XmlCursor cursor = xml.newCursor();
-
-		//String tagname = cursor.getName().getLocalPart(); // For debugging
-
-		XWPFRun run = para.createRun();
-		String styleName = cursor.getAttributeText(DocxConstants.QNAME_STYLE_ATT);
-		String styleId = cursor.getAttributeText(DocxConstants.QNAME_STYLEID_ATT);
-
-		if (null != styleName && null == styleId) {
-			// Look up the style by name:
-			XWPFStyle style = para.getDocument().getStyles().getStyleWithName(styleName);
-			if (null != style) {
-				styleId = style.getStyleId();
-			}
-		}
-
-		if (null != styleId) {
-			run.setStyle(styleId);
-		}
-
-		handleFormattingAttributes(run, xml);
-
-		cursor.toLastAttribute();
-		cursor.toNextToken(); // Should be first text or sub-element.
-		// In this loop, each different token handler is responsible for positioning
-		// the cursor past the thing that was handled such that the only END token
-		// is the end for the run element being processed.
-		while (TokenType.END != cursor.currentTokenType()) {
-			// TokenType tokenType = cursor.currentTokenType(); // For debugging
-			if (cursor.isText()) {
-				run.setText(cursor.getTextValue());
-				cursor.toNextToken();
-			} else if (cursor.isAttr()) {
-				// Ignore attributes in this context.
-			} else if (cursor.isStart()) {
-				// Handle element within run
-				String name = cursor.getName().getLocalPart();
-				String namespace = cursor.getName().getNamespaceURI();
-				if ("break".equals(name)) {
-					makeBreak(run, cursor);
-				} else if ("symbol".equals(name)) {
-					makeSymbol(run, cursor);
-				} else if ("tab".equals(name)) {
-					makeTab(run, cursor);
-				} else if ("doDateTime".equals(name)) {
-					makeDateTime(run, cursor);
-				} else {
-					log.error("makeRun(): Unexpected element {" + namespace + "}:" + name + ". Skipping.");
-					cursor.toEndToken(); // Skip this element.
-				}
-				cursor.toNextToken();
-			} else if (cursor.isComment() || cursor.isProcinst()) {
-				// Silently ignore
-				// FIXME: Not sure if we need to do more to skip a comment or processing
-				// instruction.
-				cursor.toNextToken();
-			} else {
-				// What else could there be?
-				if (cursor.getName() != null) {
-					log.error("makeRun(): Unhanded XML token " + cursor.getName().getLocalPart());
-				} else {
-					log.error("makeRun(): Unhanded XML token " + cursor.currentTokenType());
-				}
-				cursor.toNextToken();
-			}
-		}
-
-		cursor.pop();
-	}
 
 	private void handleFormattingAttributes(XWPFRun run, XmlObject xml) {
 		XmlCursor cursor = xml.newCursor();
@@ -1311,7 +1314,7 @@ public class DocxGenerator {
 					run.setTextScale(percentage);
 				} else if ("highlight".equals(attName)) {
 					run.setTextHighlightColor(attValue);
-					;
+//;
 				} else if ("imprint".equals(attName)) {
 					boolean value = Boolean.parseBoolean(attValue);
 					run.setImprinted(value);
@@ -1358,6 +1361,7 @@ public class DocxGenerator {
 
 	}
 
+	
 	/**
 	 * Make a literal tabl in the run.
 	 * 
@@ -1367,9 +1371,9 @@ public class DocxGenerator {
 	private void makeTab(XWPFRun run, XmlCursor cursor) {
 
 		run.addTab();
-
 	}
 
+	
 	/**
 	 * Make a symbol within a run
 	 * 
@@ -1602,33 +1606,40 @@ public class DocxGenerator {
 			img = ImageIO.read(imgFile);
 			intrinsicWidth = img.getWidth();
 			intrinsicHeight = img.getHeight();
+						
 		} catch (IOException e) {
 			log.warn("" + e.getClass().getSimpleName() + " exception loading image file '" + imgFile + "': "
 					+ e.getMessage());
 		}
 
 		String widthVal = cursor.getAttributeText(DocxConstants.QNAME_WIDTH_ATT);
-		if (null != widthVal) {
-			try {
-				width = (int) Measurement.toPixels(widthVal, getDotsPerInch());
-			} catch (MeasurementException e) {
-				log.error(e.getClass().getSimpleName() + ": " + e.getMessage());
-				log.error("Using default width value " + width);
-				width = intrinsicWidth > 0 ? intrinsicWidth : width;
-			}
+		if ((null != widthVal) && (Measurement.isNumeric(widthVal)) ) {
+			//try {
+				//width = (int) Measurement.toPixels(widthVal, getDotsPerInch());
+				// (RAYMOND) Turned OFF the conversion from pixels to points in XSLT... 
+				// thus the width is already in pixels.
+				width = Integer.valueOf(widthVal);
+			//} catch (MeasurementException e) {
+				//log.error(e.getClass().getSimpleName() + ": " + e.getMessage());
+				//log.error("Using default width value " + width);
+				//width = intrinsicWidth > 0 ? intrinsicWidth : width;
+			//}
 		} else {
 			width = intrinsicWidth > 0 ? intrinsicWidth : width;
 		}
 
 		String heightVal = cursor.getAttributeText(DocxConstants.QNAME_HEIGHT_ATT);
-		if (null != heightVal) {
-			try {
-				height = (int) Measurement.toPixels(heightVal, getDotsPerInch());
-			} catch (MeasurementException e) {
-				log.error(e.getClass().getSimpleName() + ": " + e.getMessage());
-				log.error("Using default height value " + height);
-				height = intrinsicHeight > 0 ? intrinsicHeight : height;
-			}
+		if ((null != heightVal) && (Measurement.isNumeric(heightVal)) ) {
+			//try {
+				//height = (int) Measurement.toPixels(heightVal, getDotsPerInch());
+				// (RAYMOND) Turned OFF the conversion from pixels to points in XSLT... 
+				// thus the width is already in pixels.
+				height = Integer.valueOf(heightVal);
+			//} catch (MeasurementException e) {
+				//log.error(e.getClass().getSimpleName() + ": " + e.getMessage());
+				//log.error("Using default height value " + height);
+				//height = intrinsicHeight > 0 ? intrinsicHeight : height;
+			//}
 		} else {
 			height = intrinsicHeight > 0 ? intrinsicHeight : height;
 		}
