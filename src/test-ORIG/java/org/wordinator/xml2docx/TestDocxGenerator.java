@@ -62,33 +62,33 @@ public class TestDocxGenerator extends TestCase {
 			assertNotNull("Expected a paragraph", p);
 			assertEquals("Heading 1 Text", p.getText());
 			System.out.println("Paragraph text='" + p.getText() + "'");
-			while (iterator.hasNext()) {
+			
+		while (iterator.hasNext()) {
 			  p = iterator.next();
-			  
 			  // Issue 16: Verify scaling of intrinsic dimensions:
 			  if (p.getText().startsWith("[Image 1]")) {
 			    XWPFRun run = p.getRuns().get(1); // Second run should contain the picture
 			    assertNotNull("Extected a second run", run);
 			    XWPFPicture picture = run.getEmbeddedPictures().get(0);
 			    assertNotNull("Expected a picture", picture);
-			    assertEquals("[1] Expected width of 100% (111px)", picture.getWidth(), 83.25);
-			    assertEquals("[1] Expected height (depth) of 50% (55.5px)", picture.getDepth(), 41.63);
-			  }
-				/*
-				 * if (p.getText().startsWith("[Image 2]")) { XWPFRun run = p.getRuns().get(1);
-				 * // Second run should contain the picture
-				 * assertNotNull("Extected a second run", run); XWPFPicture picture =
-				 * run.getEmbeddedPictures().get(0); assertNotNull("Expected a picture",
-				 * picture); assertEquals("[2] Expected width of 100% (111px)",
-				 * picture.getWidth(), 83.5);
-				 * assertEquals("[2] Expected height (depth) of 100% (111px)",
-				 * picture.getDepth(), 83.5); } if (p.getText().startsWith("[Image 3]")) {
-				 * XWPFRun run = p.getRuns().get(1); // Second run should contain the picture
-				 * assertNotNull("Extected a second run", run); XWPFPicture picture =
-				 * run.getEmbeddedPictures().get(0); assertNotNull("Expected a picture",
-				 * picture); assertEquals("Expected width of 50", picture.getWidth(), 50.0);
-				 * assertEquals("Expected height (depth) of 50", picture.getDepth(), 50.0); }
-				 */
+			    assertEquals("Expected width of 111", picture.getWidth(), 100.0);
+          assertEquals("Expected height (depth) of 55.5", picture.getDepth(), 50.0);
+			  } if (p.getText().startsWith("[Image 2]")) {
+          XWPFRun run = p.getRuns().get(1); // Second run should contain the picture
+          assertNotNull("Extected a second run", run);
+          XWPFPicture picture = run.getEmbeddedPictures().get(0);
+          assertNotNull("Expected a picture", picture);
+          assertEquals("Expected width of 111", picture.getWidth(), 100.0);
+          assertEquals("Expected height (depth) of 111", picture.getDepth(), 100.0);
+        }
+        if (p.getText().startsWith("[Image 3]")) {
+          XWPFRun run = p.getRuns().get(1); // Second run should contain the picture
+          assertNotNull("Extected a second run", run);
+          XWPFPicture picture = run.getEmbeddedPictures().get(0);
+          assertNotNull("Expected a picture", picture);
+          assertEquals("Expected width of 55.5", picture.getWidth(), 50.0);
+          assertEquals("Expected height (depth) of 55.5", picture.getDepth(), 50.0);
+        }
 			}
 			
 		} catch (Exception e) {
@@ -216,7 +216,7 @@ public class TestDocxGenerator extends TestCase {
     if (!outDir.exists()) {
       assertTrue("Failed to create directories for output file " + outFile.getAbsolutePath(), outFile.mkdirs());      
     }
-    if (outFile.exists()) {
+if (outFile.exists()) {
       assertTrue("Failed to delete output file " + outFile.getAbsolutePath(), outFile.delete());
     }
     
