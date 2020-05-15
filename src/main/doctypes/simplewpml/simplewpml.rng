@@ -1399,8 +1399,8 @@
     <a:documentation>
       <p>Border style values. 17.4.66 tcBorders (Table Cell Borders)</p>
     </a:documentation>
+    <!-- This is not a complete list. See the docs -->
     <choice>
-      <!-- This is not a complete list. See the docs -->
       <value>dashed</value>
       <value>dotDash</value>
       <value>dotDotDash</value>

@@ -118,12 +118,12 @@ public class DocxGenerator {
 		XWPFBorderType colSepBorder = null;
 
 		public TableBorderStyles(
-        XWPFBorderType defaultBorderType,
+				XWPFBorderType defaultBorderType,
 				XWPFBorderType topBorder,
 				XWPFBorderType bottomBorder,
 				XWPFBorderType leftBorder,
 				XWPFBorderType rightBorder) {
-
+			
 		}
 
 		/**
@@ -172,12 +172,11 @@ public class DocxGenerator {
 			if (styleValue != null) {
 				setDefaultBorderType(xwpfBorderType(styleValue));
 			}
-
-			if (styleBottomValue != null) {
-				setBottomBorder(xwpfBorderType(styleBottomValue));
-			}
 			if (styleTopValue != null) {
 				setTopBorder(xwpfBorderType(styleTopValue));
+			}
+			if (styleBottomValue != null) {
+				setBottomBorder(xwpfBorderType(styleBottomValue));
 			}
 			if (styleLeftValue != null) {
 				setLeftBorder(xwpfBorderType(styleLeftValue));
@@ -193,10 +192,11 @@ public class DocxGenerator {
 
 		public void setDefaultBorderType(XWPFBorderType defaultBorderType) {
 			this.defaultBorderType = defaultBorderType;
+		
+			if (getTopBorder() == null) 
+				setTopBorder(defaultBorderType);
 			if (getBottomBorder() == null)
 				setBottomBorder(defaultBorderType);
-			if (getTopBorder() == null)
-				setTopBorder(defaultBorderType);
 			if (getLeftBorder() == null)
 				setLeftBorder(defaultBorderType);
 			if (getRightBorder() == null)
@@ -213,30 +213,6 @@ public class DocxGenerator {
 
 		public XWPFBorderType getBottomBorder() {
 			return bottomBorder;
-		}
-
-		public STBorder.Enum getBottomBorderEnum() {
-			return getBorderEnumForType(getBottomBorder());
-		}
-
-		public STBorder.Enum getTopBorderEnum() {
-			return getBorderEnumForType(getTopBorder());
-		}
-
-		public STBorder.Enum getLeftBorderEnum() {
-			return getBorderEnumForType(getLeftBorder());
-		}
-
-		public STBorder.Enum getRightBorderEnum() {
-			return getBorderEnumForType(getRightBorder());
-		}
-
-		public STBorder.Enum getBorderEnumForType(XWPFBorderType type) {
-			STBorder.Enum result = null;
-			if (type != null) {
-				result = stBorderType(type);
-			}
-			return result;
 		}
 
 		public void setBottomBorder(XWPFBorderType bottomBorder) {
@@ -273,6 +249,30 @@ public class DocxGenerator {
 
 		public void setColSepBorder(XWPFBorderType colSepBorder) {
 			this.colSepBorder = colSepBorder;
+		}
+		
+		public STBorder.Enum getBottomBorderEnum() {
+			return getBorderEnumForType(getBottomBorder());
+		}
+
+		public STBorder.Enum getTopBorderEnum() {
+			return getBorderEnumForType(getTopBorder());
+		}
+
+		public STBorder.Enum getLeftBorderEnum() {
+			return getBorderEnumForType(getLeftBorder());
+		}
+
+		public STBorder.Enum getRightBorderEnum() {
+			return getBorderEnumForType(getRightBorder());
+		}
+
+		public STBorder.Enum getBorderEnumForType(XWPFBorderType type) {
+			STBorder.Enum result = null;
+			if (type != null) {
+				result = stBorderType(type);
+			}
+			return result;
 		}
 
 		/**
@@ -325,19 +325,6 @@ public class DocxGenerator {
 
 		setupNumbering(doc, this.templateDoc);
 		setupStyles(doc, this.templateDoc);
-		
-		// TESTING:
-/*		try {
-			XWPFStyles newStyles = doc.createStyles();
-			newStyles.setStyles(templateDoc.getStyle());
-			
-		} catch (IOException e) {
-			new DocxGenerationException(e.getClass().getSimpleName() + " reading template DOCX file: " + e.getMessage(), e);
-		} catch (XmlException e) {
-			new DocxGenerationException(
-					e.getClass().getSimpleName() + " Copying styles from template doc: " + e.getMessage(), e);
-		}
-*/
 		
 		constructDoc(doc, xml);
 
@@ -445,9 +432,10 @@ public class DocxGenerator {
 		XWPFParagraph lastPara = handleBody(doc, cursor.getObject(), localPageSequenceProperties);
 		cursor.pop();
 
-		if (log.isDebugEnabled()) {
-			// log.debug("handleSection(): Setting sectPr on last paragraph.");
-		}
+		/*
+		 * if (log.isDebugEnabled()) {
+		 * log.debug("handleSection(): Setting sectPr on last paragraph."); }
+		 */
 		CTPPr ppr = (lastPara.getCTP().isSetPPr() ? lastPara.getCTP().getPPr() : lastPara.getCTP().addNewPPr());
 		CTSectPr sectPr = ppr.addNewSectPr();
 
@@ -1795,19 +1783,22 @@ public class DocxGenerator {
 		}
 
 		TableBorderStyles borderStyles = setTableFrame(table, cursor);
-
+		
 		Map<QName, String> defaults = new HashMap<QName, String>();
 		String rowsep = cursor.getAttributeText(DocxConstants.QNAME_ROWSEP_ATT);
+		
 		if (rowsep != null) {
 			defaults.put(DocxConstants.QNAME_ROWSEP_ATT, rowsep);
 		}
+		
 		String colsep = cursor.getAttributeText(DocxConstants.QNAME_COLSEP_ATT);
+		
 		if (colsep != null) {
 			defaults.put(DocxConstants.QNAME_COLSEP_ATT, colsep);
 		}
 
 		int borderWidth = 8; // 8 8ths of a point, i.e. 1pt
-		int borderSpace = 8; // ???
+		int borderSpace = 0; // 
 		String borderColor = "auto";
 
 		// Rowsep is either 1 or 0
@@ -1817,14 +1808,15 @@ public class DocxGenerator {
 			if ("1".equals(rowsep)) {
 				borderStyles.setRowSepBorder(borderStyles.getDefaultBorderType());
 				table.setInsideHBorder(borderStyles.getRowSepBorder(), borderWidth, borderSpace, borderColor);
-			} else if (rowsep != null) {
+			} else {
 				borderStyles.setRowSepBorder(XWPFBorderType.NONE);
 				table.setInsideHBorder(borderStyles.getRowSepBorder(), 0, 0, borderColor);
 			}
-			if ("1.".equals(colsep)) {
+			
+			if ("1".equals(colsep)) {
 				borderStyles.setColSepBorder(borderStyles.getDefaultBorderType());
 				table.setInsideVBorder(borderStyles.getColSepBorder(), borderWidth, borderSpace, borderColor);
-			} else if (colsep != null) {
+			} else {
 				borderStyles.setRowSepBorder(XWPFBorderType.NONE);
 				table.setInsideVBorder(borderStyles.getRowSepBorder(), 0, 0, borderColor);
 			}
@@ -1909,8 +1901,7 @@ public class DocxGenerator {
 				tblWidth.setW(new BigInteger(value));
 				ctTblPr.setTblInd(tblWidth);
 			} catch (Exception e) {
-				// log.debug("setTableIndents(): leftindentVale \"" + leftindentValue + "\" not
-				// an integer", e);
+				log.debug("setTableIndents(): leftindentVale \"" + leftindentValue + "\" not an integer", e);
 			}
 		}
 
@@ -1986,11 +1977,12 @@ public class DocxGenerator {
 			}
 
 		}
-		if (bottomBorder != null) {
-			table.setBottomBorder(bottomBorder, frameWidth, frameSpace, frameColor);
-		}
+		
 		if (topBorder != null) {
 			table.setTopBorder(topBorder, frameWidth, frameSpace, frameColor);
+		}
+		if (bottomBorder != null) {
+			table.setBottomBorder(bottomBorder, frameWidth, frameSpace, frameColor);
 		}
 		if (leftBorder != null) {
 			table.setLeftBorder(leftBorder, frameWidth, frameSpace, frameColor);
@@ -1998,6 +1990,7 @@ public class DocxGenerator {
 		if (rightBorder != null) {
 			table.setRightBorder(rightBorder, frameWidth, frameSpace, frameColor);
 		}
+		
 		return borderStyles;
 	}
 
@@ -2453,9 +2446,7 @@ public class DocxGenerator {
 	}
 
 	private void setupStyles(XWPFDocument doc, XWPFDocument templateDoc) throws DocxGenerationException {
-		// Load template. For now this is hard coded but will need to be
-		// parameterized
-				
+		// Load template. For now this is hard coded but will need to be parameterized
 		// Copy the template's styles to result document:
 
 		try {
