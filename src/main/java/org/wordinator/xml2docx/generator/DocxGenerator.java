@@ -1075,16 +1075,33 @@ public class DocxGenerator {
 				// Handle element within run
 				String name = cursor.getName().getLocalPart();
 				String namespace = cursor.getName().getNamespaceURI();
+				
 				if ("break".equals(name)) {
 					makeBreak(run, cursor);
+					
 				} else if ("symbol".equals(name)) {
 					makeSymbol(run, cursor);
+					
 				} else if ("tab".equals(name)) {
 					makeTab(run, cursor);
 
-					// Municode custom...
+				// Municode custom...
 				} else if ("doDateTime".equals(name)) {
-					makeDateTime(run, cursor);
+					log.info("+ [debug: <" + name.toString() + "> (Municode Custom Element)");
+					
+					if (cursor.getTextValue() != null) {
+						log.info("+ \tFOUND cursor.getTextValue != null... ");
+						
+						String instr = cursor.getTextValue();
+						log.info("+ \tinstr = " + instr);
+						
+						makeDateTime(run, cursor, instr);
+						
+					} else {
+						log.info("+ \tNULL getTextValue is null.");
+						makeDateTime(run, cursor, "America/New_York;EST");
+					}
+					
 
 				} else {
 					log.error("makeRun(): Unexpected element {" + namespace + "}:" + name + ". Skipping.");
@@ -1206,18 +1223,31 @@ public class DocxGenerator {
 	}
 
 	/**
-	 * date and time: ex. (Created: 2020-04-09 12:54:46 [America/New_York])
+	 * date and time: ex. (Created: 2020-04-09 12:54:46 [EST])
 	 * 
 	 */
-	private void makeDateTime(XWPFRun run, XmlCursor cursor) {
+	private void makeDateTime(XWPFRun run, XmlCursor cursor, String instr) {
 		final String DATE_FORMATTER = "yyyy-MM-dd HH:mm:ss";
-
+		
+		log.info("+ [debug makeDateTime:instr]: " + instr);
+		
+		// Example: instr = "America/New_York;EST";
+		// NOTE: zoneIdString = ""America/New_York", zoneCustomString = "EST"
+//		String zoneIdString = instr.substring(0, instr.lastIndexOf(';') -1);
+//	    String zoneCustomString = instr.substring(instr.lastIndexOf(";") + 1);
+		
+		// temp...
+		String zoneCustomString = "EST";
+//	    log.info("+++ [debug]\n\tzoneIdString: " + zoneIdString + "\n\tzoneCustomString: " + zoneCustomString);
+	    
 		ZoneId zoneId = ZoneId.of("America/New_York");
+				
 		// LocalDateTime now = LocalDateTime.now();
 		LocalDateTime nowZone = LocalDateTime.now(zoneId);
 		DateTimeFormatter formatter = DateTimeFormatter.ofPattern(DATE_FORMATTER);
 		String formatDateTime = nowZone.format(formatter);
-		run.setText("   (Created: " + formatDateTime + " [" + zoneId.toString() + "])");
+		
+		run.setText("   (Created: " + formatDateTime + " [" + zoneCustomString + "])");
 		run.setFontFamily("Consolas");
 		run.setFontSize(6);
 	}
