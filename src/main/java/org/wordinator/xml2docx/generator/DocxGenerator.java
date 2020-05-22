@@ -56,7 +56,7 @@ import org.apache.xmlbeans.XmlCursor;
 import org.apache.xmlbeans.XmlCursor.TokenType;
 import org.apache.xmlbeans.XmlException;
 import org.apache.xmlbeans.XmlObject;
-import org.openxmlformats.schemas.officeDocument.x2006.math.STJc;
+//import org.openxmlformats.schemas.officeDocument.x2006.math.STJc;
 import org.openxmlformats.schemas.wordprocessingml.x2006.main.CTBody;
 import org.openxmlformats.schemas.wordprocessingml.x2006.main.CTBookmark;
 import org.openxmlformats.schemas.wordprocessingml.x2006.main.CTBorder;
@@ -64,7 +64,7 @@ import org.openxmlformats.schemas.wordprocessingml.x2006.main.CTDecimalNumber;
 import org.openxmlformats.schemas.wordprocessingml.x2006.main.CTDocument1;
 import org.openxmlformats.schemas.wordprocessingml.x2006.main.CTHdrFtrRef;
 import org.openxmlformats.schemas.wordprocessingml.x2006.main.CTHyperlink;
-import org.openxmlformats.schemas.wordprocessingml.x2006.main.CTJc;
+//import org.openxmlformats.schemas.wordprocessingml.x2006.main.CTJc;
 import org.openxmlformats.schemas.wordprocessingml.x2006.main.CTMarkupRange;
 import org.openxmlformats.schemas.wordprocessingml.x2006.main.CTOnOff;
 import org.openxmlformats.schemas.wordprocessingml.x2006.main.CTP;
@@ -87,7 +87,7 @@ import org.openxmlformats.schemas.wordprocessingml.x2006.main.CTVMerge;
 import org.openxmlformats.schemas.wordprocessingml.x2006.main.STBorder;
 import org.openxmlformats.schemas.wordprocessingml.x2006.main.STChapterSep;
 import org.openxmlformats.schemas.wordprocessingml.x2006.main.STHdrFtr;
-import org.openxmlformats.schemas.wordprocessingml.x2006.main.STJc.Enum;
+//import org.openxmlformats.schemas.wordprocessingml.x2006.main.STJc.Enum;
 import org.openxmlformats.schemas.wordprocessingml.x2006.main.STMerge;
 import org.openxmlformats.schemas.wordprocessingml.x2006.main.STNumberFormat;
 import org.openxmlformats.schemas.wordprocessingml.x2006.main.STOnOff;
@@ -1781,15 +1781,16 @@ public class DocxGenerator {
 
 	}
 
-	
-	private void setTableAlign(XWPFTable table, ParagraphAlignment align) {
-		CTTblPr tblPr = table.getCTTbl().getTblPr(); 
-		CTJc jc = (tblPr.isSetJc() ? tblPr.getJc() : tblPr.addNewJc()); 
-		Enum en = Enum.forInt(align.getValue());
-		jc.setVal(en);
-		
-		log.info("+ [debug] setTableAlign align and en: " + align.toString() + "\t" + en.toString());
-	}
+
+	// NOT USED; USING Docx template table styles instead.
+//	private void setTableAlign(XWPFTable table, ParagraphAlignment align) {
+//		CTTblPr tblPr = table.getCTTbl().getTblPr(); 
+//		CTJc jc = (tblPr.isSetJc() ? tblPr.getJc() : tblPr.addNewJc()); 
+//		Enum en = Enum.forInt(align.getValue());
+//		jc.setVal(en);
+//		
+//		log.info("+ [debug] setTableAlign align and en: " + align.toString() + "\t" + en.toString());
+//	}
 	 
 	// Example call to setTableAlign (above)...
 	// setTableAlign(table, ParagraphAlignment.CENTER);	
