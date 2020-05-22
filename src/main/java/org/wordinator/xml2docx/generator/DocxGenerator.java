@@ -1087,22 +1087,13 @@ public class DocxGenerator {
 
 				// Municode custom...
 				} else if ("doDateTime".equals(name)) {
-					log.info("+ [debug: <" + name.toString() + "> (Municode Custom Element)");
-					
-					if (cursor.getTextValue() != null) {
-						log.info("+ \tFOUND cursor.getTextValue != null... ");
-						
+					if (cursor.getTextValue() != null) {						
 						String instr = cursor.getTextValue();
-						log.info("+ \tinstr = " + instr);
-						
 						makeDateTime(run, cursor, instr);
-						
 					} else {
-						log.info("+ \tNULL getTextValue is null.");
 						makeDateTime(run, cursor, "America/New_York;EST");
 					}
-					
-
+					cursor.toEndToken(); // Skip this element.
 				} else {
 					log.error("makeRun(): Unexpected element {" + namespace + "}:" + name + ". Skipping.");
 					cursor.toEndToken(); // Skip this element.
@@ -1229,25 +1220,39 @@ public class DocxGenerator {
 	private void makeDateTime(XWPFRun run, XmlCursor cursor, String instr) {
 		final String DATE_FORMATTER = "yyyy-MM-dd HH:mm:ss";
 		
-		log.info("+ [debug makeDateTime:instr]: " + instr);
-		
-		// Example: instr = "America/New_York;EST";
+		// Examples: instr = "America/New_York;EST";  or simply "America/New_York"
 		// NOTE: zoneIdString = ""America/New_York", zoneCustomString = "EST"
-//		String zoneIdString = instr.substring(0, instr.lastIndexOf(';') -1);
-//	    String zoneCustomString = instr.substring(instr.lastIndexOf(";") + 1);
+		String zoneIdString = "";
+		if(instr.endsWith(";")) {
+			instr = instr.substring(0, instr.lastIndexOf(';'));
+		}
 		
-		// temp...
-		String zoneCustomString = "EST";
-//	    log.info("+++ [debug]\n\tzoneIdString: " + zoneIdString + "\n\tzoneCustomString: " + zoneCustomString);
-	    
-		ZoneId zoneId = ZoneId.of("America/New_York");
-				
-		// LocalDateTime now = LocalDateTime.now();
+		if(instr.contains(";")) {
+			zoneIdString = instr.substring(0, instr.lastIndexOf(';'));
+		} else {
+			zoneIdString = instr;
+		}
+		
+		String zoneCustomString = "";
+		if(instr.contains(";")) {
+			zoneCustomString = instr.substring(instr.lastIndexOf(";") + 1);
+		} else {
+			zoneCustomString = instr;
+		}
+		
+		ZoneId zoneId = ZoneId.of(zoneIdString);
 		LocalDateTime nowZone = LocalDateTime.now(zoneId);
 		DateTimeFormatter formatter = DateTimeFormatter.ofPattern(DATE_FORMATTER);
 		String formatDateTime = nowZone.format(formatter);
+	    String outputDateString = "";
+	    
+	    if(zoneCustomString != "" && zoneCustomString != null) {
+	    	outputDateString = "   Created: " + formatDateTime + " [" + zoneCustomString + "]";
+	    } else {
+	    	outputDateString = "   Created: " + formatDateTime;
+	    }
 		
-		run.setText("   (Created: " + formatDateTime + " [" + zoneCustomString + "])");
+		run.setText(outputDateString);
 		run.setFontFamily("Consolas");
 		run.setFontSize(6);
 	}
