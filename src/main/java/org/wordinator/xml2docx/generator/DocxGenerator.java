@@ -27,6 +27,8 @@ import javax.xml.namespace.QName;
 import org.apache.commons.io.FilenameUtils;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
+import org.apache.poi.sl.usermodel.TextShape;
+import org.apache.poi.sl.usermodel.TextShape.TextDirection;
 import org.apache.poi.ss.formula.eval.NotImplementedException;
 import org.apache.poi.util.Units;
 import org.apache.poi.wp.usermodel.HeaderFooterType;
@@ -83,6 +85,7 @@ import org.openxmlformats.schemas.wordprocessingml.x2006.main.CTTblPr;
 import org.openxmlformats.schemas.wordprocessingml.x2006.main.CTTblWidth;
 import org.openxmlformats.schemas.wordprocessingml.x2006.main.CTTcBorders;
 import org.openxmlformats.schemas.wordprocessingml.x2006.main.CTTcPr;
+import org.openxmlformats.schemas.wordprocessingml.x2006.main.CTTextDirection;
 import org.openxmlformats.schemas.wordprocessingml.x2006.main.CTVMerge;
 import org.openxmlformats.schemas.wordprocessingml.x2006.main.STBorder;
 import org.openxmlformats.schemas.wordprocessingml.x2006.main.STChapterSep;
@@ -95,6 +98,7 @@ import org.openxmlformats.schemas.wordprocessingml.x2006.main.STPageOrientation;
 import org.openxmlformats.schemas.wordprocessingml.x2006.main.STSectionMark;
 import org.openxmlformats.schemas.wordprocessingml.x2006.main.STShd;
 import org.openxmlformats.schemas.wordprocessingml.x2006.main.STStyleType;
+import org.openxmlformats.schemas.wordprocessingml.x2006.main.STTextDirection;
 import org.openxmlformats.schemas.wordprocessingml.x2006.main.STVerticalAlignRun;
 import org.openxmlformats.schemas.wordprocessingml.x2006.main.impl.STOnOffImpl;
 import org.wordinator.xml2docx.xwpf.model.XWPFHeaderFooterPolicy;
@@ -2290,6 +2294,7 @@ public class DocxGenerator {
 
 			CTTcPr ctTcPr = cell.getCTTc().addNewTcPr();
 			String align = cursor.getAttributeText(DocxConstants.QNAME_ALIGN_ATT);
+			String rotate = cursor.getAttributeText(DocxConstants.QNAME_ROTATE_ATT);
 			String valign = cursor.getAttributeText(DocxConstants.QNAME_VALIGN_ATT);
 			String colspan = cursor.getAttributeText(DocxConstants.QNAME_COLSPAN_ATT);
 			String rowspan = cursor.getAttributeText(DocxConstants.QNAME_ROWSPAN_ATT);
@@ -2416,6 +2421,44 @@ public class DocxGenerator {
 					ctTcPr.setShd(ctShd);
 				} catch (Exception e) {
 					log.warn("Shade value must be a 6-digit hex string, got \"" + shade + "\"");
+				}
+			}
+			
+			if (null != rotate) {
+				try {
+					//<w:tcPr>
+                    //	<w:tcW w:w="1525" w:type="dxa"/>
+                    //	<w:textDirection w:val="btLr"/>
+					//</w:tcPr>
+					
+					/*
+					 * TextDirection[] textdir = TextDirection.values(); for(int x=0; x<=
+					 * textdir.length; x++) { System.out.println("[" + x + "] " + textdir[x]); }
+					 */
+					// RESULTS: HORIZONTAL, VERTICAL, VERTICAL_270, STACKED					
+					
+					switch (rotate) {
+						case "VERTICAL_270":
+							ctTcPr.addNewTextDirection().setVal(STTextDirection.BT_LR);
+							break;
+
+						case "VERTICAL":
+							ctTcPr.addNewTextDirection().setVal(STTextDirection.LR_TB);
+							break;
+
+						case "STACKED":
+							ctTcPr.addNewTextDirection().setVal(STTextDirection.LR_TB);
+							break;
+
+						case "HORIZONTAL":
+							ctTcPr.addNewTextDirection().setVal(STTextDirection.LR_TB);
+							break;
+					
+						default:
+							log.debug("+ [debug] Must fix processing for 'rotate' value:" + rotate);
+					}					
+				} catch (Exception e) {
+					log.warn("Bad 'rotate' value " + rotate );
 				}
 			}
 
