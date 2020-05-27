@@ -27,8 +27,6 @@ import javax.xml.namespace.QName;
 import org.apache.commons.io.FilenameUtils;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
-import org.apache.poi.sl.usermodel.TextShape;
-import org.apache.poi.sl.usermodel.TextShape.TextDirection;
 import org.apache.poi.ss.formula.eval.NotImplementedException;
 import org.apache.poi.util.Units;
 import org.apache.poi.wp.usermodel.HeaderFooterType;
@@ -85,12 +83,10 @@ import org.openxmlformats.schemas.wordprocessingml.x2006.main.CTTblPr;
 import org.openxmlformats.schemas.wordprocessingml.x2006.main.CTTblWidth;
 import org.openxmlformats.schemas.wordprocessingml.x2006.main.CTTcBorders;
 import org.openxmlformats.schemas.wordprocessingml.x2006.main.CTTcPr;
-import org.openxmlformats.schemas.wordprocessingml.x2006.main.CTTextDirection;
 import org.openxmlformats.schemas.wordprocessingml.x2006.main.CTVMerge;
 import org.openxmlformats.schemas.wordprocessingml.x2006.main.STBorder;
 import org.openxmlformats.schemas.wordprocessingml.x2006.main.STChapterSep;
 import org.openxmlformats.schemas.wordprocessingml.x2006.main.STHdrFtr;
-//import org.openxmlformats.schemas.wordprocessingml.x2006.main.STJc.Enum;
 import org.openxmlformats.schemas.wordprocessingml.x2006.main.STMerge;
 import org.openxmlformats.schemas.wordprocessingml.x2006.main.STNumberFormat;
 import org.openxmlformats.schemas.wordprocessingml.x2006.main.STOnOff;
@@ -2295,6 +2291,7 @@ public class DocxGenerator {
 			CTTcPr ctTcPr = cell.getCTTc().addNewTcPr();
 			String align = cursor.getAttributeText(DocxConstants.QNAME_ALIGN_ATT);
 			String rotate = cursor.getAttributeText(DocxConstants.QNAME_ROTATE_ATT);
+			String height = cursor.getAttributeText(DocxConstants.QNAME_HEIGHT_ATT);
 			String valign = cursor.getAttributeText(DocxConstants.QNAME_VALIGN_ATT);
 			String colspan = cursor.getAttributeText(DocxConstants.QNAME_COLSPAN_ATT);
 			String rowspan = cursor.getAttributeText(DocxConstants.QNAME_ROWSPAN_ATT);
@@ -2408,6 +2405,21 @@ public class DocxGenerator {
 					ctTcPr.setVMerge(vMerge);
 				} catch (NumberFormatException e) {
 					log.warn("Non-numeric value for @rowspan: \"" + rowspan + "\". Ignored.");
+				}
+			}
+			if (null != height) {
+				String rawHeight = "";
+				if(Measurement.isNumeric(height)) {
+					rawHeight = height + "px";
+				} else {
+					rawHeight = height;
+				}
+				
+				try {
+					int heightTwips = (int) Measurement.toTwips(rawHeight, getDotsPerInch());
+					row.setHeight(heightTwips);
+				} catch (NumberFormatException | MeasurementException e) {
+					log.warn("Problem with row @height: \"" + height + "\". Ignored.");
 				}
 			}
 
