@@ -2356,8 +2356,7 @@ public class DocxGenerator {
 								}
 								width = "" + spanMeasurement;
 							} else {
-								log.warn(
-										"Widths of spanned columns are neither all percents or all measurements, cannot calculate exact spanned width");
+								log.warn("Widths of spanned columns are neither all percents or all measurements, cannot calculate exact spanned width");
 								log.warn("Widths are \"" + String.join("\", \"", spanWidths) + "\"");
 							}
 							cell.setWidth(width);
