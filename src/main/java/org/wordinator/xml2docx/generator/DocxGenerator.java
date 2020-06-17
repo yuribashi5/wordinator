@@ -372,25 +372,78 @@ public class DocxGenerator {
 	 */
 	private XWPFParagraph handleBody(XWPFDocument doc, XmlObject xml, XmlObject pageSequenceProperties)
 			throws DocxGenerationException {
+
 		if (log.isDebugEnabled()) {
-			// log.debug("handleBody(): starting...");
+			log.debug("handleBody(): starting...");
 		}
+
 		XmlCursor cursor = xml.newCursor();
+
 		if (cursor.toFirstChild()) {
 			do {
 				String tagName = cursor.getName().getLocalPart();
 				String namespace = cursor.getName().getNamespaceURI();
+
+				// Important attributes to manage
+				// START building mapBodyAdditionalParameters
+				String htmlstyle = null;
+				String pagebreak = null;
+				htmlstyle = cursor.getAttributeText(DocxConstants.QNAME_HTMLSTYLE_ATT);
+				pagebreak = cursor.getAttributeText(DocxConstants.QNAME_PAGEBREAK_ATT);
+
+				Map<String, String> mapBodyAdditionalParameters = new HashMap<String, String>();
+				mapBodyAdditionalParameters.put("aaa", "zzz");
+
+				if (null != htmlstyle) {
+					mapBodyAdditionalParameters.put("htmlstyle", htmlstyle);
+				}
+
+				if (null != pagebreak) {
+					mapBodyAdditionalParameters.put("pagebreak", pagebreak);
+				}
+
+				mapBodyAdditionalParameters = cleanupMapEntries(mapBodyAdditionalParameters);
+				// END building mapBodyAdditionalParameters
+
 				if ("p".equals(tagName)) {
 					XWPFParagraph p = doc.createParagraph();
-					makeParagraph(p, cursor);
+					makeParagraph(p, cursor, mapBodyAdditionalParameters);
+
 				} else if ("section".equals(tagName)) {
 					handleSection(doc, cursor.getObject(), pageSequenceProperties);
+
 				} else if ("table".equals(tagName)) {
 					XWPFTable table = doc.createTable();
-					makeTable(table, cursor.getObject());
+
+					// Important attributes to manage
+					// START building mapTableAdditionalParameters
+					String table_htmlstyle = null;
+					String table_pagebreak = null;
+					table_htmlstyle = cursor.getAttributeText(DocxConstants.QNAME_HTMLSTYLE_ATT);
+					table_pagebreak = cursor.getAttributeText(DocxConstants.QNAME_PAGEBREAK_ATT);
+
+					Map<String, String> mapTableAdditionalParameters = new HashMap<String, String>();
+					mapTableAdditionalParameters.put("aaa", "zzz");
+
+					if (null != table_htmlstyle) {
+						mapTableAdditionalParameters.putIfAbsent("htmlstyle", htmlstyle);
+					}
+
+					if (null != table_pagebreak) {
+						mapTableAdditionalParameters.putIfAbsent("pagebreak", pagebreak);
+					}
+
+					mapTableAdditionalParameters = cleanupMapEntries(mapTableAdditionalParameters);
+					// END building mapTableAdditionalParameters
+
+					makeTable(table, cursor.getObject(), mapTableAdditionalParameters);
+
 				} else if ("object".equals(tagName)) {
+					// - - - - - - - - - - - - - - - - - - - - - - -
 					// FIXME: This is currently unimplemented.
+					// - - - - - - - - - - - - - - - - - - - - - - -
 					makeObject(doc, cursor);
+
 				} else {
 					log.warn("handleBody(): Unexpected element {" + namespace + "}:'" + tagName
 							+ "' in <body>. Ignored.");
@@ -843,12 +896,53 @@ public class DocxGenerator {
 			do {
 				String tagName = cursor.getName().getLocalPart();
 				String namespace = cursor.getName().getNamespaceURI();
+
 				if ("p".equals(tagName)) {
 					XWPFParagraph p = headerFooter.createParagraph();
-					makeParagraph(p, cursor);
+					// Important attributes to manage
+					// building mapBodyAdditionalParameters
+					String hf_htmlstyle = null;
+					String hf_pagebreak = null;
+					hf_htmlstyle = cursor.getAttributeText(DocxConstants.QNAME_HTMLSTYLE_ATT);
+					hf_pagebreak = cursor.getAttributeText(DocxConstants.QNAME_PAGEBREAK_ATT);
+
+					Map<String, String> mapHFAdditionalParameters = new HashMap<String, String>();
+					mapHFAdditionalParameters.put("aaa", "zzz");
+
+					if (null != hf_htmlstyle) {
+						mapHFAdditionalParameters.putIfAbsent("htmlstyle", hf_htmlstyle);
+					}
+
+					if (null != hf_pagebreak) {
+						mapHFAdditionalParameters.putIfAbsent("pagebreak", hf_pagebreak);
+					}
+					
+					mapHFAdditionalParameters = cleanupMapEntries(mapHFAdditionalParameters);
+					// finished building mapHFAdditionalParameters
+					makeParagraph(p, cursor, mapHFAdditionalParameters);
+
 				} else if ("table".equals(tagName)) {
 					XWPFTable table = headerFooter.createTable(0, 0);
-					makeTable(table, cursor.getObject());
+					// Important attributes to manage
+					// building mapTableAdditionalParameters
+					String table_htmlstyle = null;
+					String table_pagebreak = null;
+					table_htmlstyle = cursor.getAttributeText(DocxConstants.QNAME_HTMLSTYLE_ATT);
+					table_pagebreak = cursor.getAttributeText(DocxConstants.QNAME_PAGEBREAK_ATT);
+
+					Map<String, String> mapTableAdditionalParameters = new HashMap<String, String>();
+					mapTableAdditionalParameters.put("aaa", "zzz");
+
+					if (null != table_htmlstyle) {
+						mapTableAdditionalParameters.putIfAbsent("htmlstyle", table_htmlstyle);
+					}
+
+					if (null != table_pagebreak) {
+						mapTableAdditionalParameters.putIfAbsent("pagebreak", table_pagebreak);
+					}
+					// finished building mapTableAdditionalParameters
+
+					makeTable(table, cursor.getObject(), mapTableAdditionalParameters);
 				} else {
 					// There are other body-level things that could go in a footnote but
 					// we aren't worrying about them for now.
@@ -880,21 +974,6 @@ public class DocxGenerator {
 	/**
 	 * Construct a Word paragraph
 	 * 
-	 * @param para   The Word paragraph to construct
-	 * @param cursor Cursor pointing at the
-	 *               <p>
-	 *               element the paragraph will reflect.
-	 * @return Paragraph (should be same object as passed in).
-	 */
-	private XWPFParagraph makeParagraph(XWPFParagraph p, XmlCursor cursor) throws DocxGenerationException {
-
-//		log.info("makeParagraph(p;cursor)...returning makeParagraph(p, cursor, null)...");
-		return makeParagraph(p, cursor, null);
-	}
-
-	/**
-	 * Construct a Word paragraph
-	 * 
 	 * @param para                 The Word paragraph to construct
 	 * @param cursor               Cursor pointing at the
 	 *                             <p>
@@ -903,12 +982,16 @@ public class DocxGenerator {
 	 *                             i.e., from sections
 	 * @return Paragraph (should be same object as passed in).
 	 */
-	private XWPFParagraph makeParagraph(XWPFParagraph para, XmlCursor cursor, Map<String, String> additionalProperties)
+	private XWPFParagraph makeParagraph(XWPFParagraph para, XmlCursor cursor, Map<String, String> mapParaProperties)
 			throws DocxGenerationException {
 
+System.out.println("\n+++ [DEBUG makeParagraph Map]: " + mapParaProperties.toString() + "\n");		
+		
 		cursor.push();
 		String styleName = cursor.getAttributeText(DocxConstants.QNAME_STYLE_ATT);
 		String styleId = cursor.getAttributeText(DocxConstants.QNAME_STYLEID_ATT);
+
+		mapParaProperties = cleanupMapEntries(mapParaProperties);
 
 		if (null != styleName && null == styleId) {
 			// Look up the style by name:
@@ -930,41 +1013,62 @@ public class DocxGenerator {
 				// style.
 			}
 		}
+
 		if (null != styleId) {
 			para.setStyle(styleId);
 		}
 
-		if (additionalProperties != null) {
-			for (String propName : additionalProperties.keySet()) {
-				String value = additionalProperties.get(propName);
-				if (value != null) {
-					// FIXME: This is a quick hack. Need a more general
-					// and elegant way to manage setting of properties.
-					if (DocxConstants.PROPERTY_PAGEBREAK.equals(propName)) {
-						if (DocxConstants.PROPERTY_VALUE_CONTINUOUS.equals(value)) {
-							para.setPageBreak(false);
-						} else {
-							para.setPageBreak(true);
-						}
-					}
+		// NOTE: renamed additionalProperties to mapParaProperties
+		if (null != mapParaProperties) {
+
+			if (mapParaProperties.containsKey("pagebreak")) {
+				if (mapParaProperties.get("pagebreak") == "true") {
+					para.setPageBreak(true);
+				} else {
+					para.setPageBreak(false);
 				}
 			}
-		}
 
-		// Explicit page break on a paragraph should override the section-level break I
+			/* Eliot's (as he says) hack... */
+			/*
+			 * for (String propName : mapParaProperties.keySet()) { String value =
+			 * mapParaProperties.get(propName); if (value != null) { // FIXME: This is a
+			 * quick hack. Need a more general // and elegant way to manage setting of
+			 * properties. if (DocxConstants.PROPERTY_PAGEBREAK.equals(propName)) { if
+			 * (DocxConstants.PROPERTY_VALUE_CONTINUOUS.equals(value)) {
+			 * para.setPageBreak(false); } else { para.setPageBreak(true); } } } }
+			 */
+
+			for (Map.Entry<String, String> entry : mapParaProperties.entrySet()) {
+				log.info("+ [makeParagraph dump map entry]: " + entry.toString());
+			}
+
+		} else {
+			log.error("[makeParagraph...mapParaProperties]: Unexpected mapParaProperties is null]");
+		}
+		
+		// Explicit (@page-break-before) page break on a paragraph should override the
+		// section-level break I
 		// would think.
 		String pageBreakBefore = cursor.getAttributeText(DocxConstants.QNAME_PAGE_BREAK_BEFORE_ATT);
-		if (pageBreakBefore != null) {
+
+		if (null != pageBreakBefore) {
 			boolean breakValue = Boolean.valueOf(pageBreakBefore);
 			para.setPageBreak(breakValue);
 		}
+
+		Map<String, String> mapRunProperties = new HashMap<String, String>();
+		mapRunProperties.put("aaa", "zzz");
+		
+		mapRunProperties.put("rowFontSize", String.valueOf(mapParaProperties.get("rowFontSize")));
+		mapRunProperties.put("cellFontSize", String.valueOf(mapParaProperties.get("cellFontSize")));
 
 		if (cursor.toFirstChild()) {
 			do {
 				String tagName = cursor.getName().getLocalPart();
 				String namespace = cursor.getName().getNamespaceURI();
 				if ("run".equals(tagName)) {
-					makeRun(para, cursor.getObject());
+					makeRun(para, cursor.getObject(), mapRunProperties);
 				} else if ("bookmarkStart".equals(tagName)) {
 					makeBookmarkStart(para, cursor);
 				} else if ("bookmarkEnd".equals(tagName)) {
@@ -994,11 +1098,27 @@ public class DocxGenerator {
 					}
 					// handle nested paragraphs (so DocBook-ish)...
 				} else if ("p".equals(tagName)) {
-					makeParagraph(para, cursor);
+					Map<String, String> mapHtmlStyle = new HashMap<String, String>();
+					mapHtmlStyle.put("aaa", "zzz");
+					
+					
+					// Important attributes to manage
+					// START building mapHtmlStyle
+					String p_htmlstyle = null;
+					p_htmlstyle = cursor.getAttributeText(DocxConstants.QNAME_HTMLSTYLE_ATT);
+
+					if (null != p_htmlstyle) {
+						mapHtmlStyle.put("htmlstyle", p_htmlstyle);
+					}
+
+					mapHtmlStyle = cleanupMapEntries(mapHtmlStyle);
+					// END building mapHtmlStyle					
+										
+					makeParagraph(para, cursor, mapHtmlStyle);
 
 				} else {
-					log.warn("makeParagraph(p;cursor;map): Unexpected element {" + namespace + "}:" + tagName
-							+ " in <p>. Ignored.");
+					log.warn("[makeParagraph...para, cursor, mapHtmlStyle]: Unexpected element {" + namespace + "}:"
+							+ tagName + " in <p>. Ignored.");
 				}
 			} while (cursor.toNextSibling());
 		}
@@ -1033,13 +1153,48 @@ public class DocxGenerator {
 	/**
 	 * Construct a run within a paragraph.
 	 * 
-	 * @param para The output paragraph to add the run to.
-	 * @param xml  The <run> element.
+	 * @param para          The output paragraph to add the run to.
+	 * @param xml           The <run> element
+	 * @param mapProperties - optional zero or more optional parameters [Raymond]
 	 */
-	private void makeRun(XWPFParagraph para, XmlObject xml) throws DocxGenerationException {
+	private void makeRun(XWPFParagraph para, XmlObject xml, Map<String, String> mapRunProperties)
+			throws DocxGenerationException {
 		XmlCursor cursor = xml.newCursor();
 
-		// String tagname = cursor.getName().getLocalPart(); // For debugging
+		String run_row_fontsize = null;
+		String run_cell_fontsize = null;
+
+		if (null != mapRunProperties) {
+			/*
+			 * Integer ctr = 0; // using for-each loop for iteration over
+			 * mapRunProperties.entrySet()
+			 * 
+			 * for (Map.Entry<String,String> entry : mapRunProperties.entrySet()) {
+			 * if(entry.getValue() != null) { ctr += 1; System.out.println("[" + ctr +
+			 * "] Key = " + entry.getKey() + ", Value = " + entry.getValue()); } }
+			 */
+
+			// row_font-size:
+			if (mapRunProperties.containsKey("rowFontSize")) {
+				run_row_fontsize = mapRunProperties.get("rowFontSize");
+			}
+			// cell_font-size:
+			if (mapRunProperties.containsKey("cellFontSize")) {
+				run_cell_fontsize = mapRunProperties.get("cellFontSize");
+			}
+			
+			log.debug("+ [DEBUG mapRunProperties]: " + mapRunProperties.toString());
+
+			/* Eliot's hack... */
+			/*
+			 * for (String propName : mapRunProperties.keySet()) { String value =
+			 * mapRunProperties.get(propName); if (value != null) { // FIXME: This is a
+			 * quick hack. Need a more general // and elegant way to manage setting of
+			 * properties. if (DocxConstants.PROPERTY_PAGEBREAK.equals(propName)) { if
+			 * (DocxConstants.PROPERTY_VALUE_CONTINUOUS.equals(value)) {
+			 * para.setPageBreak(false); } else { para.setPageBreak(true); } } } }
+			 */
+		}
 
 		XWPFRun run = para.createRun();
 		String styleName = cursor.getAttributeText(DocxConstants.QNAME_STYLE_ATT);
@@ -1055,6 +1210,14 @@ public class DocxGenerator {
 
 		if (null != styleId) {
 			run.setStyle(styleId);
+		}
+
+		if (null != run_row_fontsize) {
+			run.setFontSize(Integer.valueOf(run_row_fontsize));
+		}
+
+		if (null != run_cell_fontsize) {
+			run.setFontSize(Integer.valueOf(run_cell_fontsize));
 		}
 
 		handleFormattingAttributes(run, xml);
@@ -1075,19 +1238,19 @@ public class DocxGenerator {
 				// Handle element within run
 				String name = cursor.getName().getLocalPart();
 				String namespace = cursor.getName().getNamespaceURI();
-				
+
 				if ("break".equals(name)) {
 					makeBreak(run, cursor);
-					
+
 				} else if ("symbol".equals(name)) {
 					makeSymbol(run, cursor);
-					
+
 				} else if ("tab".equals(name)) {
 					makeTab(run, cursor);
 
-				// Municode custom...
+					// Municode custom...
 				} else if ("doDateTime".equals(name)) {
-					if (cursor.getTextValue() != null) {						
+					if (cursor.getTextValue() != null) {
 						String instr = cursor.getTextValue();
 						makeDateTime(run, cursor, instr);
 					} else {
@@ -1219,39 +1382,39 @@ public class DocxGenerator {
 	 */
 	private void makeDateTime(XWPFRun run, XmlCursor cursor, String instr) {
 		final String DATE_FORMATTER = "yyyy-MM-dd HH:mm:ss";
-		
-		// Examples: instr = "America/New_York;EST";  or simply "America/New_York"
+
+		// Examples: instr = "America/New_York;EST"; or simply "America/New_York"
 		// NOTE: zoneIdString = ""America/New_York", zoneCustomString = "EST"
 		String zoneIdString = "";
-		if(instr.endsWith(";")) {
+		if (instr.endsWith(";")) {
 			instr = instr.substring(0, instr.lastIndexOf(';'));
 		}
-		
-		if(instr.contains(";")) {
+
+		if (instr.contains(";")) {
 			zoneIdString = instr.substring(0, instr.lastIndexOf(';'));
 		} else {
 			zoneIdString = instr;
 		}
-		
+
 		String zoneCustomString = "";
-		if(instr.contains(";")) {
+		if (instr.contains(";")) {
 			zoneCustomString = instr.substring(instr.lastIndexOf(";") + 1);
 		} else {
 			zoneCustomString = instr;
 		}
-		
+
 		ZoneId zoneId = ZoneId.of(zoneIdString);
 		LocalDateTime nowZone = LocalDateTime.now(zoneId);
 		DateTimeFormatter formatter = DateTimeFormatter.ofPattern(DATE_FORMATTER);
 		String formatDateTime = nowZone.format(formatter);
-	    String outputDateString = "";
-	    
-	    if(zoneCustomString != "" && zoneCustomString != null) {
-	    	outputDateString = "   Created: " + formatDateTime + " [" + zoneCustomString + "]";
-	    } else {
-	    	outputDateString = "   Created: " + formatDateTime;
-	    }
-		
+		String outputDateString = "";
+
+		if (zoneCustomString != "" && zoneCustomString != null) {
+			outputDateString = "   Created: " + formatDateTime + " [" + zoneCustomString + "]";
+		} else {
+			outputDateString = "   Created: " + formatDateTime;
+		}
+
 		run.setText(outputDateString);
 		run.setFontFamily("Consolas");
 		run.setFontSize(6);
@@ -1303,6 +1466,34 @@ public class DocxGenerator {
 	}
 
 	/**
+	 * Clean mapFile entries. - if key = 'htmlstyle' then break it out into
+	 * individual entries - trim front and aft removing whitespace, &c.
+	 * 
+	 * @param mapFile passed in map return mapFile
+	 */
+	private Map<String, String> cleanupMapEntries(Map<String, String> mapFile) {
+		for (Map.Entry<String, String> entry : mapFile.entrySet()) {
+			if (!entry.getValue().contains(";")) {
+				entry.setValue(entry.getValue() + ";");
+			}
+
+			if (entry.getKey() == "htmlstyle") {
+				// for each value pair ex. font-size:6q
+				for (String retval : entry.getValue().split(";")) {
+					String newKey = retval.substring(0, retval.indexOf(":"));
+					String newValue = retval.substring(retval.indexOf(":") + 1);
+
+					mapFile.putIfAbsent(newKey, newValue);
+					// log.debug("+ [debug cleanupMapEntries] Key: " + newKey + "\tValue: " +
+					// mapFile.get(newKey));
+				}
+			}
+		}
+
+		return mapFile;
+	}
+
+	/**
 	 * Construct a Header rule or horizontal line.
 	 * 
 	 * @param para   Paragraph to add the field to
@@ -1335,12 +1526,20 @@ public class DocxGenerator {
 		ctField.setInstr(fieldData);
 	}
 
+	/**
+	 * Handle Formatting Attributes
+	 * 
+	 * @param run run to add the field to.
+	 * @param xml xml - object
+	 */
 	private void handleFormattingAttributes(XWPFRun run, XmlObject xml) {
 		XmlCursor cursor = xml.newCursor();
+
 		if (cursor.toFirstAttribute()) {
 			do {
 				String attName = cursor.getName().getLocalPart();
 				String attValue = cursor.getTextValue();
+
 				if ("bold".equals(attName)) {
 					boolean value = Boolean.parseBoolean(attValue);
 					run.setBold(value);
@@ -1459,10 +1658,12 @@ public class DocxGenerator {
 				String namespace = cursor.getName().getNamespaceURI();
 				if ("p".equals(tagName)) {
 					XWPFParagraph p = note.createParagraph();
-					makeParagraph(p, cursor);
+					Map<String, String> mapHtmlStyle = new HashMap<String, String>();
+					makeParagraph(p, cursor, mapHtmlStyle);
 				} else if ("table".equals(tagName)) {
 					XWPFTable table = note.createTable();
-					makeTable(table, cursor.getObject());
+					Map<String, String> mapHtmlStyle = new HashMap<String, String>();
+					makeTable(table, cursor.getObject(), mapHtmlStyle);
 				} else {
 					// There are other body-level things that could go in a footnote but
 					// we aren't worrying about them for now.
@@ -1781,7 +1982,6 @@ public class DocxGenerator {
 
 	}
 
-
 	// NOT USED; USING Docx template table styles instead.
 //	private void setTableAlign(XWPFTable table, ParagraphAlignment align) {
 //		CTTblPr tblPr = table.getCTTbl().getTblPr(); 
@@ -1791,11 +1991,10 @@ public class DocxGenerator {
 //		
 //		log.info("+ [debug] setTableAlign align and en: " + align.toString() + "\t" + en.toString());
 //	}
-	 
+
 	// Example call to setTableAlign (above)...
-	// setTableAlign(table, ParagraphAlignment.CENTER);	
-	
-	
+	// setTableAlign(table, ParagraphAlignment.CENTER);
+
 	/**
 	 * Construct a table.
 	 * 
@@ -1803,22 +2002,23 @@ public class DocxGenerator {
 	 * @param xml   The &lt;table&gt; element
 	 * @throws DocxGenerationException
 	 */
-	private void makeTable(XWPFTable table, XmlObject xml) throws DocxGenerationException {
+	private void makeTable(XWPFTable table, XmlObject xml, Map<String, String> mapAdditionalParameters)
+			throws DocxGenerationException {
 
 		// If the column widths are absolute measurements they can be set on the grid,
 		// but if they are proportional, then they have to be set on at least the first
 		// row's cells. The table grid is not required (it always reflects the
-		// calculated width of the columns, possibly determined by applying percentage 
+		// calculated width of the columns, possibly determined by applying percentage
 		// table and column widths.
 		XmlCursor cursor = xml.newCursor();
 
-		//setTableAlign(table, ParagraphAlignment.CENTER);
-		
+		mapAdditionalParameters = cleanupMapEntries(mapAdditionalParameters);
+
 		String widthValue = cursor.getAttributeText(DocxConstants.QNAME_WIDTH_ATT);
 		if (null != widthValue) {
 			table.setWidth(getMeasurementValue(widthValue));
 		}
-		
+
 		setTableIndents(table, cursor);
 
 		String styleName = cursor.getAttributeText(DocxConstants.QNAME_STYLE_ATT);
@@ -1854,7 +2054,7 @@ public class DocxGenerator {
 		}
 
 		int borderWidth = 8; // 8 8ths of a point, i.e. 1pt
-		int borderSpace = 0; //
+		int borderSpace = 0; // NOT 8 [Raymond]
 		String borderColor = "auto";
 
 		// Rowsep is either 1 or 0
@@ -1921,22 +2121,24 @@ public class DocxGenerator {
 		// Body rows:
 
 		cursor = xml.newCursor();
+
 		if (cursor.toChild(DocxConstants.QNAME_TBODY_ELEM)) {
 			if (cursor.toFirstChild()) {
 				RowSpanManager rowSpanManager = new RowSpanManager();
 				do {
 					// Process the rows
 					XWPFTableRow row = makeTableRow(table, cursor.getObject(), colDefs, rowSpanManager, defaults);
+
 					// Adjust row as needed.
 					row.getCtRow(); // For setting low-level properties.
 				} while (cursor.toNextSibling());
 			}
 		}
+
 		table.removeRow(0); // Remove the first row that's always added automatically (FIXME: This may not
 							// be needed any more)
 	}
 
-	
 	private void setTableIndents(XWPFTable table, XmlCursor cursor) {
 		// Should only have left/right or inside/outside values, not both.
 
@@ -2273,15 +2475,38 @@ public class DocxGenerator {
 	 */
 	private XWPFTableRow makeTableRow(XWPFTable table, XmlObject xml, TableColumnDefinitions colDefs,
 			RowSpanManager rowSpanManager, Map<QName, String> defaults) throws DocxGenerationException {
+
 		XmlCursor cursor = xml.newCursor();
 		XWPFTableRow row = table.createRow();
+
+		String htmlstyle = "";
+		String rowFontSize = "";
+		htmlstyle = cursor.getAttributeText(DocxConstants.QNAME_HTMLSTYLE_ATT);
+
+		if (!htmlstyle.isEmpty()) {
+			Map<String, String> mapRowAdditionalParameters = new HashMap<String, String>();
+			if (!htmlstyle.isEmpty()) {
+				mapRowAdditionalParameters.putIfAbsent("htmlstyle", htmlstyle);
+				mapRowAdditionalParameters = cleanupMapEntries(mapRowAdditionalParameters);
+			}
+
+			if (null != mapRowAdditionalParameters) {
+				if (mapRowAdditionalParameters.containsKey("font-size")) {
+					// test shows 8q converted to 16; 72q to 144; Therefore: simply double for sz
+					rowFontSize = String.valueOf(Integer.valueOf(mapRowAdditionalParameters.get("font-size")) * 2);
+				}
+
+				if (!rowFontSize.isEmpty()) {
+					log.debug("+ [debug makeTableRow() rowFontSize: " + rowFontSize);
+				}
+			}
+		}
 
 		cursor.push();
 		cursor.toChild(DocxConstants.QNAME_TD_ELEM);
 		int cellCtr = 0;
 
 		do {
-			// log.debug("makeTableRow(): Cell " + cellCtr);
 			TableColumnDefinition colDef = colDefs.get(cellCtr);
 			// Rows always have at least one cell
 			// FIXME: At some point the POI API will remove the automatic creation
@@ -2290,12 +2515,38 @@ public class DocxGenerator {
 
 			CTTcPr ctTcPr = cell.getCTTc().addNewTcPr();
 			String align = cursor.getAttributeText(DocxConstants.QNAME_ALIGN_ATT);
+			String cell_htmlstyle_att = cursor.getAttributeText(DocxConstants.QNAME_HTMLSTYLE_ATT);
 			String rotate = cursor.getAttributeText(DocxConstants.QNAME_ROTATE_ATT);
 			String height = cursor.getAttributeText(DocxConstants.QNAME_HEIGHT_ATT);
 			String valign = cursor.getAttributeText(DocxConstants.QNAME_VALIGN_ATT);
 			String colspan = cursor.getAttributeText(DocxConstants.QNAME_COLSPAN_ATT);
 			String rowspan = cursor.getAttributeText(DocxConstants.QNAME_ROWSPAN_ATT);
 			String shade = cursor.getAttributeText(DocxConstants.QNAME_SHADE_ATT);
+
+			String cellFontSize = null;
+
+			if (null != rowFontSize) {
+				cellFontSize = rowFontSize;
+			}
+
+			if (null != cell_htmlstyle_att) {
+				Map<String, String> mapCellAdditionalParameters = new HashMap<String, String>();
+
+				if (null != cell_htmlstyle_att) {
+					mapCellAdditionalParameters.putIfAbsent("htmlstyle", htmlstyle);
+					mapCellAdditionalParameters = cleanupMapEntries(mapCellAdditionalParameters);
+				}
+
+				if (null != mapCellAdditionalParameters.get("font-size")) {
+					cellFontSize = String.valueOf(Integer.valueOf(mapCellAdditionalParameters.get("font-size")) * 2);
+				}
+
+				/*
+				 * if (null != cellFontSize) { // add a paragraph in cell XWPFParagraph
+				 * paragraph = row.getCell(0).addParagraph(); setRun(paragraph.createRun(),
+				 * "Calibri", cellFontSize, "000000" , "zTEXT" , false, false); }
+				 */
+			}
 
 			setCellBorders(cursor, ctTcPr);
 			long spanCount = 1; // Default value;
@@ -2307,6 +2558,7 @@ public class DocxGenerator {
 				} else {
 					String width = null;
 					width = colDef.getWidth();
+
 					if (colspan != null) {
 						try {
 							spanCount = Integer.parseInt(colspan);
@@ -2319,6 +2571,7 @@ public class DocxGenerator {
 							boolean allPercents = true;
 							boolean allNumbers = true;
 							boolean allAuto = true;
+
 							for (int i = cellCtr; i < cellCtr + spanCount; i++) {
 								String widthVal = colDefs.get(i).getSpecifiedWidth();
 								spanWidths.add(widthVal);
@@ -2326,6 +2579,7 @@ public class DocxGenerator {
 								allNumbers = allNumbers && !widthVal.endsWith("%") && !widthVal.equals("auto");
 								allAuto = allAuto && widthVal.equals("auto");
 							}
+
 							if (allPercents) {
 								double spanPercent = 0;
 								for (String cand : spanWidths) {
@@ -2356,15 +2610,16 @@ public class DocxGenerator {
 								}
 								width = "" + spanMeasurement;
 							} else {
-								log.warn("Widths of spanned columns are neither all percents or all measurements, cannot calculate exact spanned width");
+								log.warn(
+										"Widths of spanned columns are neither all percents or all measurements, cannot calculate exact spanned width");
 								log.warn("Widths are \"" + String.join("\", \"", spanWidths) + "\"");
 							}
+
 							cell.setWidth(width);
 						} catch (Exception e) {
 							log.error("makeTableRow(): @colspan value \"" + colspan
 									+ "\" is not an integer. Using first column's width.");
 						}
-
 					}
 					cell.setWidth(width);
 					// log.debug("makeTableRow(): Setting width from column definition: " +
@@ -2374,10 +2629,12 @@ public class DocxGenerator {
 				log.error(e.getClass().getSimpleName() + " setting width for column " + (cellCtr + 1) + ": "
 						+ e.getMessage(), e);
 			}
+
 			if (null != valign) {
 				XWPFVertAlign vertAlign = XWPFVertAlign.valueOf(valign.toUpperCase());
 				cell.setVerticalAlignment(vertAlign);
 			}
+
 			if (null != colspan) {
 				try {
 					int spanval = Integer.parseInt(colspan);
@@ -2393,6 +2650,7 @@ public class DocxGenerator {
 					log.warn("Non-numeric value for @colspan: \"" + colspan + "\". Ignored.");
 				}
 			}
+
 			if (null != rowspan) {
 				try {
 					int spanval = Integer.parseInt(rowspan);
@@ -2406,14 +2664,15 @@ public class DocxGenerator {
 					log.warn("Non-numeric value for @rowspan: \"" + rowspan + "\". Ignored.");
 				}
 			}
+
 			if (null != height) {
 				String rawHeight = "";
-				if(Measurement.isNumeric(height)) {
+				if (Measurement.isNumeric(height)) {
 					rawHeight = height + "px";
 				} else {
 					rawHeight = height;
 				}
-				
+
 				try {
 					int heightTwips = (int) Measurement.toTwips(rawHeight, getDotsPerInch());
 					row.setHeight(heightTwips);
@@ -2434,42 +2693,42 @@ public class DocxGenerator {
 					log.warn("Shade value must be a 6-digit hex string, got \"" + shade + "\"");
 				}
 			}
-			
+
 			if (null != rotate) {
 				try {
-					//<w:tcPr>
-                    //	<w:tcW w:w="1525" w:type="dxa"/>
-                    //	<w:textDirection w:val="btLr"/>
-					//</w:tcPr>
-					
+					// <w:tcPr>
+					// <w:tcW w:w="1525" w:type="dxa"/>
+					// <w:textDirection w:val="btLr"/>
+					// </w:tcPr>
+
 					/*
 					 * TextDirection[] textdir = TextDirection.values(); for(int x=0; x<=
 					 * textdir.length; x++) { System.out.println("[" + x + "] " + textdir[x]); }
 					 */
-					// RESULTS: HORIZONTAL, VERTICAL, VERTICAL_270, STACKED					
-					
+					// RESULTS: HORIZONTAL, VERTICAL, VERTICAL_270, STACKED
+
 					switch (rotate) {
-						case "VERTICAL_270":
-							ctTcPr.addNewTextDirection().setVal(STTextDirection.BT_LR);
-							break;
+					case "VERTICAL_270":
+						ctTcPr.addNewTextDirection().setVal(STTextDirection.BT_LR);
+						break;
 
-						case "VERTICAL":
-							ctTcPr.addNewTextDirection().setVal(STTextDirection.LR_TB);
-							break;
+					case "VERTICAL":
+						ctTcPr.addNewTextDirection().setVal(STTextDirection.LR_TB);
+						break;
 
-						case "STACKED":
-							ctTcPr.addNewTextDirection().setVal(STTextDirection.LR_TB);
-							break;
+					case "STACKED":
+						ctTcPr.addNewTextDirection().setVal(STTextDirection.LR_TB);
+						break;
 
-						case "HORIZONTAL":
-							ctTcPr.addNewTextDirection().setVal(STTextDirection.LR_TB);
-							break;
-					
-						default:
-							log.debug("+ [debug] Must fix processing for 'rotate' value:" + rotate);
-					}					
+					case "HORIZONTAL":
+						ctTcPr.addNewTextDirection().setVal(STTextDirection.LR_TB);
+						break;
+
+					default:
+						log.debug("+ [debug] Must fix processing for 'rotate' value:" + rotate);
+					}
 				} catch (Exception e) {
-					log.warn("Bad 'rotate' value " + rotate );
+					log.warn("Bad 'rotate' value " + rotate);
 				}
 			}
 
@@ -2486,7 +2745,13 @@ public class DocxGenerator {
 				if (cursor.toChild(DocxConstants.QNAME_P_ELEM)) {
 					do {
 						XWPFParagraph p = cell.addParagraph();
-						makeParagraph(p, cursor);
+
+						Map<String, String> mapParaParameters = new HashMap<String, String>();
+						mapParaParameters.putIfAbsent("row_fontsize", rowFontSize.toString());
+						mapParaParameters.putIfAbsent("cell_fontsize", cellFontSize.toString());
+
+						makeParagraph(p, cursor, mapParaParameters);
+
 						if (null != align) {
 							if ("JUSTIFY".equalsIgnoreCase(align)) {
 								// Issue 18: "BOTH" is the better match to "JUSTIFY"
@@ -2507,8 +2772,18 @@ public class DocxGenerator {
 			cursor.pop();
 			cellCtr += spanCount;
 		} while (cursor.toNextSibling());
+
 		return row;
 	}
+
+//	private static void setRun(XWPFRun run , String fontFamily , int fontSize , String colorRGB , String text , boolean bold , boolean addBreak) {
+//		//run.setFontFamily(fontFamily);
+//		run.setFontSize(fontSize);
+//		//run.setColor(colorRGB);
+//		//run.setText(text);
+//		//run.setBold(bold);
+//		//if (addBreak) run.addBreak();
+//	}
 
 	/**
 	 * Set the borders on the cells.

@@ -53,6 +53,7 @@ public final class DocxConstants {
 	public static final QName QNAME_HEIGHT_ATT = new QName("", "height");
 	public static final QName QNAME_HIGHLIGHT_ATT = new QName("", "highlight");
 	public static final QName QNAME_HREF_ATT = new QName("", "href");
+	public static final QName QNAME_HTMLSTYLE_ATT = new QName("", "htmlstyle");
 	public static final QName QNAME_ID_ATT = new QName("", "id");
 	public static final QName QNAME_IMPRINT_ATT = new QName("", "imprint");
 	public static final QName QNAME_INSIDEINDENT_ATT = new QName("", "insideindent");
@@ -64,6 +65,7 @@ public final class DocxConstants {
 	public static final QName QNAME_OUTLINE_ATT = new QName("", "outline");
 	public static final QName QNAME_OUTLINE_LEVEL_ATT = new QName("", "outline-level");
 	public static final QName QNAME_OUTSIDEINDENT_ATT = new QName("", "outsideindent");
+	public static final QName QNAME_PAGEBREAK_ATT = new QName("", "pagebreak");
 	public static final QName QNAME_PAGE_BREAK_BEFORE_ATT = new QName("", "page-break-before");
 	public static final QName QNAME_POSITION_ATT = new QName("", "position");
 	public static final QName QNAME_RIGHT_ATT = new QName("", "right");
