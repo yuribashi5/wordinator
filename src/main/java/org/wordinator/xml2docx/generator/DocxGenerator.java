@@ -326,7 +326,6 @@ public class DocxGenerator {
 
 		setupNumbering(doc, this.templateDoc);
 		setupStyles(doc, this.templateDoc);
-
 		constructDoc(doc, xml);
 
 		FileOutputStream out = new FileOutputStream(outFile);
@@ -341,20 +340,36 @@ public class DocxGenerator {
 	 * @param xml Simple ML doc to walk
 	 */
 	private void constructDoc(XWPFDocument doc, XmlObject xml) throws DocxGenerationException {
+
+		log.info("+ DocxGenerator-constructDoc() BEGIN...");
 		XmlCursor cursor = xml.newCursor();
+		log.info("+ DocxGenerator-constructDoc() BEFORE toFirstChild()");
 		cursor.toFirstChild(); // Put us on the root element of the document
+		log.info("+ DocxGenerator-constructDoc() BEFORE push()");
 		cursor.push();
+		log.info("+ DocxGenerator-constructDoc() BEFORE pageSequenceProperties");
 		XmlObject pageSequenceProperties = null;
+
+		log.info("+ DocxGenerator-constructDoc() BEFORE toChild(page-sequence-properties)");
+		
 		if (cursor.toChild(new QName(DocxConstants.SIMPLE_WP_NS, "page-sequence-properties"))) {
 			// Set up document-level headers. These will apply to the whole
 			// document if there are no sections, or to the last section if
 			// there are sections. Results in a w:sectPr as the last child
 			// of w:body.
+			log.info("+ DocxGenerator-constructDoc()-IF-page-sequence-properties BEFORE setupPageSequence()");
 			setupPageSequence(doc, cursor.getObject());
+			log.info("+ DocxGenerator-constructDoc()-IF-page-sequence-properties BEFORE pageSequenceProperties=");
 			pageSequenceProperties = cursor.getObject();
 		}
+
 		cursor.pop();
+
+		log.info("+ DocxGenerator-constructDoc() BEFORE cursor to 'body'");
 		cursor.toChild(new QName(DocxConstants.SIMPLE_WP_NS, "body"));
+		log.info("+ DocxGenerator-constructDoc() AFTER cursor to 'body'");
+
+		log.info("+ DocxGenerator-constructDoc() BEFORE handleBody()");
 		handleBody(doc, cursor.getObject(), pageSequenceProperties);
 
 	}
@@ -381,61 +396,61 @@ public class DocxGenerator {
 
 		if (cursor.toFirstChild()) {
 			do {
+				
+				log.debug("+ [debug BEGIN handleBody Do-loop]");
+				
 				String tagName = cursor.getName().getLocalPart();
 				String namespace = cursor.getName().getNamespaceURI();
 
-				// Important attributes to manage
-				// START building mapBodyAdditionalParameters
 				String htmlstyle = null;
 				String pagebreak = null;
-				htmlstyle = cursor.getAttributeText(DocxConstants.QNAME_HTMLSTYLE_ATT);
-				pagebreak = cursor.getAttributeText(DocxConstants.QNAME_PAGEBREAK_ATT);
-
-				Map<String, String> mapBodyAdditionalParameters = new HashMap<String, String>();
-				mapBodyAdditionalParameters.put("aaa", "zzz");
-
-				if (null != htmlstyle) {
-					mapBodyAdditionalParameters.put("htmlstyle", htmlstyle);
-				}
-
-				if (null != pagebreak) {
-					mapBodyAdditionalParameters.put("pagebreak", pagebreak);
-				}
-
-				mapBodyAdditionalParameters = cleanupMapEntries(mapBodyAdditionalParameters);
-				// END building mapBodyAdditionalParameters
-
+					
 				if ("p".equals(tagName)) {
+
+					log.debug("+ [debug handleBody 'p'");
+					// START building mapBodyAdditionalParameters
+					htmlstyle = cursor.getAttributeText(DocxConstants.QNAME_HTMLSTYLE_ATT);
+					pagebreak = cursor.getAttributeText(DocxConstants.QNAME_PAGEBREAK_ATT);
+	
+					Map<String, String> mapParaAdditionalParameters = new HashMap<String, String>();
+	
+					if (null != htmlstyle) {
+						mapParaAdditionalParameters.put("htmlstyle", htmlstyle);
+					}
+	
+					if (null != pagebreak) {
+						mapParaAdditionalParameters.put("pagebreak", pagebreak);
+					}
+	
+					mapParaAdditionalParameters = cleanupMapEntries(mapParaAdditionalParameters);
+					// END building mapParaAdditionalParameters
+				
 					XWPFParagraph p = doc.createParagraph();
-					makeParagraph(p, cursor, mapBodyAdditionalParameters);
+					makeParagraph(p, cursor, mapParaAdditionalParameters);
 
 				} else if ("section".equals(tagName)) {
 					handleSection(doc, cursor.getObject(), pageSequenceProperties);
 
-				} else if ("table".equals(tagName)) {
-					XWPFTable table = doc.createTable();
-
-					// Important attributes to manage
+				} else if ("tableXXX".equals(tagName)) {
+					log.debug("+ [debug handleBody 'table'");
 					// START building mapTableAdditionalParameters
-					String table_htmlstyle = null;
-					String table_pagebreak = null;
-					table_htmlstyle = cursor.getAttributeText(DocxConstants.QNAME_HTMLSTYLE_ATT);
-					table_pagebreak = cursor.getAttributeText(DocxConstants.QNAME_PAGEBREAK_ATT);
-
+					htmlstyle = cursor.getAttributeText(DocxConstants.QNAME_HTMLSTYLE_ATT);
+					pagebreak = cursor.getAttributeText(DocxConstants.QNAME_PAGEBREAK_ATT);
+	
 					Map<String, String> mapTableAdditionalParameters = new HashMap<String, String>();
-					mapTableAdditionalParameters.put("aaa", "zzz");
-
-					if (null != table_htmlstyle) {
-						mapTableAdditionalParameters.putIfAbsent("htmlstyle", htmlstyle);
+	
+					if (null != htmlstyle) {
+						mapTableAdditionalParameters.put("htmlstyle", htmlstyle);
 					}
-
-					if (null != table_pagebreak) {
-						mapTableAdditionalParameters.putIfAbsent("pagebreak", pagebreak);
+	
+					if (null != pagebreak) {
+						mapTableAdditionalParameters.put("pagebreak", pagebreak);
 					}
-
+	
 					mapTableAdditionalParameters = cleanupMapEntries(mapTableAdditionalParameters);
 					// END building mapTableAdditionalParameters
-
+					
+					XWPFTable table = doc.createTable();
 					makeTable(table, cursor.getObject(), mapTableAdditionalParameters);
 
 				} else if ("object".equals(tagName)) {
@@ -588,11 +603,16 @@ public class DocxGenerator {
 
 		setPageNumberProperties(cursor, sectPr);
 		cursor.push();
+
+		log.info("+ DocxGenerator-setupPageSequence() BEFORE headers-and-footers");
 		if (cursor.toChild(new QName(DocxConstants.SIMPLE_WP_NS, "headers-and-footers"))) {
 			constructHeadersAndFooters(doc, cursor.getObject());
 		}
+		
 		cursor.pop();
 		cursor.push();
+
+		log.info("+ DocxGenerator-setupPageSequence() BEFORE page-size");
 		if (cursor.toChild(new QName(DocxConstants.SIMPLE_WP_NS, "page-size"))) {
 			setPageSize(cursor, sectPr);
 		}
@@ -600,6 +620,7 @@ public class DocxGenerator {
 
 	}
 
+	
 	private void setPageNumberProperties(XmlCursor cursor, CTSectPr sectPr) {
 		cursor.push();
 		if (cursor.toChild(new QName(DocxConstants.SIMPLE_WP_NS, "page-number-properties"))) {
@@ -662,6 +683,7 @@ public class DocxGenerator {
 	 * @throws DocxGenerationException
 	 */
 	private void constructHeadersAndFooters(XWPFDocument doc, XmlObject xml) throws DocxGenerationException {
+		log.info("+ DocxGenerator-...-constructHeadersAndFooters(doc, xml");
 		constructHeadersAndFooters(doc, xml, null);
 	}
 
@@ -679,6 +701,7 @@ public class DocxGenerator {
 	 */
 	private void constructHeadersAndFooters(XWPFDocument doc, XmlObject xml, CTSectPr sectPr)
 			throws DocxGenerationException {
+		log.info("+ DocxGenerator-...-constructHeadersAndFooters(doc, xml, sectPr");
 		XmlCursor cursor = xml.newCursor();
 
 		boolean haveOddHeader = false;
@@ -695,11 +718,14 @@ public class DocxGenerator {
 			}
 
 			do {
+
+				log.info("+ DocxGenerator-...-constructHeadersAndFooters(doc, xml, sectPr)- do...");
 				String tagName = cursor.getName().getLocalPart();
 				String namespace = cursor.getName().getNamespaceURI();
 				List<CTHdrFtrRef> refs = null;
 
 				if ("header".equals(tagName)) {
+					log.info("+ DocxGenerator-...-constructHeadersAndFooters(doc, xml, sectPr)- do...'header'");
 					HeaderFooterType type = getHeaderFooterType(cursor);
 
 					if (type == HeaderFooterType.FIRST) {
@@ -723,10 +749,12 @@ public class DocxGenerator {
 					}
 
 					if (isDocument) {
+						log.info("+ DocxGenerator-...-constructHeadersAndFooters()- do...'header' - isDocument");
 						// Make document-level header
 						XWPFHeader header = doc.createHeader(type);
 						makeHeaderFooter(header, cursor.getObject());
 					} else {
+						log.info("+ DocxGenerator-...-constructHeadersAndFooters()- do...'header' - !isDocument");
 						XWPFHeader header = sectionHfPolicy.createHeader(getSTHFTypeForXWPFHFType(type));
 						makeHeaderFooter(header, cursor.getObject());
 						refs = sectPr.getHeaderReferenceList();
@@ -735,6 +763,7 @@ public class DocxGenerator {
 						setHeaderFooterRefType(type, ref);
 					}
 				} else if ("footer".equals(tagName)) {
+					log.info("+ DocxGenerator-...-constructHeadersAndFooters(doc, xml, sectPr)- do...'footer'");
 					HeaderFooterType type = getHeaderFooterType(cursor);
 
 					if (type == HeaderFooterType.DEFAULT) {
@@ -881,6 +910,34 @@ public class DocxGenerator {
 		ref.setType(getSTHFTypeForXWPFHFType(type));
 	}
 
+	
+	/**
+	 * Returns a map from the contents of the @htmlstring and @pagebreak attributes
+	 */
+	private Map<String, String> createMapHtmlStyle(String htmlstyle, String pagebreak) {
+		//log.debug("+ [debug] createMapHtmlStyle() - BEGIN htmlstyle]: " + htmlstyle);
+		//log.debug("+ [debug] createMapHtmlStyle() - BEGIN pagebreak]: " + pagebreak);
+		
+		
+		Map<String, String> mapHtmlStyle = new HashMap<String, String>();
+
+		if (htmlstyle != "null") {
+			mapHtmlStyle.putIfAbsent("htmlstyle", htmlstyle);
+		}
+
+		if (pagebreak != "null") {
+			mapHtmlStyle.putIfAbsent("pagebreak", pagebreak);
+		}
+
+		if(null != mapHtmlStyle) {
+			mapHtmlStyle = cleanupMapEntries(mapHtmlStyle);
+		}
+
+		//log.info("+ [debug] createMapHtmlStyle() - mapHtmlStyle]: " + mapHtmlStyle.toString());
+
+		return mapHtmlStyle;
+	}
+
 	/**
 	 * Construct the content of a page header or footer
 	 * 
@@ -894,34 +951,37 @@ public class DocxGenerator {
 
 		if (cursor.toFirstChild()) {
 			do {
+
+				log.info("+ DocxGenerator-...-makeHeaderFooter()- do...");
 				String tagName = cursor.getName().getLocalPart();
 				String namespace = cursor.getName().getNamespaceURI();
 
 				if ("p".equals(tagName)) {
+					log.info("+ DocxGenerator-...-makeHeaderFooter()- do...'p'");
 					XWPFParagraph p = headerFooter.createParagraph();
-					// Important attributes to manage
-					// building mapBodyAdditionalParameters
+
 					String hf_htmlstyle = null;
 					String hf_pagebreak = null;
 					hf_htmlstyle = cursor.getAttributeText(DocxConstants.QNAME_HTMLSTYLE_ATT);
 					hf_pagebreak = cursor.getAttributeText(DocxConstants.QNAME_PAGEBREAK_ATT);
-
-					Map<String, String> mapHFAdditionalParameters = new HashMap<String, String>();
-					mapHFAdditionalParameters.put("aaa", "zzz");
-
-					if (null != hf_htmlstyle) {
-						mapHFAdditionalParameters.putIfAbsent("htmlstyle", hf_htmlstyle);
+					
+					if(hf_htmlstyle == null) {
+						hf_htmlstyle = "";
 					}
-
-					if (null != hf_pagebreak) {
-						mapHFAdditionalParameters.putIfAbsent("pagebreak", hf_pagebreak);
+					if(hf_pagebreak == null) {
+						hf_pagebreak = "";
 					}
 					
-					mapHFAdditionalParameters = cleanupMapEntries(mapHFAdditionalParameters);
-					// finished building mapHFAdditionalParameters
+					log.info("+ DocxGenerator-...-makeHeaderFooter()- do...'p' - hf_htmlstyle: " + hf_htmlstyle);
+					log.info("+ DocxGenerator-...-makeHeaderFooter()- do...'p' - hf_pagebreak: " + hf_pagebreak);
+					log.info("+ DocxGenerator-...-makeHeaderFooter()- do...'p' - BEFORE mapHFAdditionalParameters map creation");
+					Map<String, String> mapHFAdditionalParameters = createMapHtmlStyle(hf_htmlstyle, hf_pagebreak);
+					log.info("+ DocxGenerator-...-makeHeaderFooter()- do...'p' - AFTER mapHFAdditionalParameters map creation");
+
 					makeParagraph(p, cursor, mapHFAdditionalParameters);
 
 				} else if ("table".equals(tagName)) {
+					log.info("+ DocxGenerator-...-makeHeaderFooter()- do...'table'");
 					XWPFTable table = headerFooter.createTable(0, 0);
 					// Important attributes to manage
 					// building mapTableAdditionalParameters
@@ -930,18 +990,20 @@ public class DocxGenerator {
 					table_htmlstyle = cursor.getAttributeText(DocxConstants.QNAME_HTMLSTYLE_ATT);
 					table_pagebreak = cursor.getAttributeText(DocxConstants.QNAME_PAGEBREAK_ATT);
 
-					Map<String, String> mapTableAdditionalParameters = new HashMap<String, String>();
-					mapTableAdditionalParameters.put("aaa", "zzz");
+					/*
+					 * Map<String, String> mapTableAdditionalParameters = new HashMap<String,
+					 * String>(); mapTableAdditionalParameters.put("aaa", "zzz");
+					 * 
+					 * if (null != table_htmlstyle) {
+					 * mapTableAdditionalParameters.putIfAbsent("htmlstyle", table_htmlstyle); }
+					 * 
+					 * if (null != table_pagebreak) {
+					 * mapTableAdditionalParameters.putIfAbsent("pagebreak", table_pagebreak); } //
+					 * finished building mapTableAdditionalParameters
+					 */
 
-					if (null != table_htmlstyle) {
-						mapTableAdditionalParameters.putIfAbsent("htmlstyle", table_htmlstyle);
-					}
-
-					if (null != table_pagebreak) {
-						mapTableAdditionalParameters.putIfAbsent("pagebreak", table_pagebreak);
-					}
-					// finished building mapTableAdditionalParameters
-
+					Map<String, String> mapTableAdditionalParameters = createMapHtmlStyle(table_htmlstyle,
+							table_pagebreak);
 					makeTable(table, cursor.getObject(), mapTableAdditionalParameters);
 				} else {
 					// There are other body-level things that could go in a footnote but
@@ -985,13 +1047,13 @@ public class DocxGenerator {
 	private XWPFParagraph makeParagraph(XWPFParagraph para, XmlCursor cursor, Map<String, String> mapParaProperties)
 			throws DocxGenerationException {
 
-System.out.println("\n+++ [DEBUG makeParagraph Map]: " + mapParaProperties.toString() + "\n");		
-		
+		System.out.println("\n+++ [DEBUG makeParagraph Map]: " + mapParaProperties.toString() + "\n");
+
 		cursor.push();
 		String styleName = cursor.getAttributeText(DocxConstants.QNAME_STYLE_ATT);
 		String styleId = cursor.getAttributeText(DocxConstants.QNAME_STYLEID_ATT);
 
-		mapParaProperties = cleanupMapEntries(mapParaProperties);
+		// mapParaProperties = cleanupMapEntries(mapParaProperties);
 
 		if (null != styleName && null == styleId) {
 			// Look up the style by name:
@@ -1019,34 +1081,35 @@ System.out.println("\n+++ [DEBUG makeParagraph Map]: " + mapParaProperties.toStr
 		}
 
 		// NOTE: renamed additionalProperties to mapParaProperties
-		if (null != mapParaProperties) {
+		// if (null != mapParaProperties) {
 
-			if (mapParaProperties.containsKey("pagebreak")) {
-				if (mapParaProperties.get("pagebreak") == "true") {
-					para.setPageBreak(true);
-				} else {
-					para.setPageBreak(false);
-				}
+		if (mapParaProperties.containsKey("pagebreak")) {
+			if (mapParaProperties.get("pagebreak") == "true") {
+				para.setPageBreak(true);
+			} else {
+				para.setPageBreak(false);
 			}
-
-			/* Eliot's (as he says) hack... */
-			/*
-			 * for (String propName : mapParaProperties.keySet()) { String value =
-			 * mapParaProperties.get(propName); if (value != null) { // FIXME: This is a
-			 * quick hack. Need a more general // and elegant way to manage setting of
-			 * properties. if (DocxConstants.PROPERTY_PAGEBREAK.equals(propName)) { if
-			 * (DocxConstants.PROPERTY_VALUE_CONTINUOUS.equals(value)) {
-			 * para.setPageBreak(false); } else { para.setPageBreak(true); } } } }
-			 */
-
-			for (Map.Entry<String, String> entry : mapParaProperties.entrySet()) {
-				log.info("+ [makeParagraph dump map entry]: " + entry.toString());
-			}
-
-		} else {
-			log.error("[makeParagraph...mapParaProperties]: Unexpected mapParaProperties is null]");
 		}
-		
+
+		/* Eliot's (as he says) hack... */
+		/*
+		 * for (String propName : mapParaProperties.keySet()) { String value =
+		 * mapParaProperties.get(propName); if (value != null) { // FIXME: This is a
+		 * quick hack. Need a more general // and elegant way to manage setting of
+		 * properties. if (DocxConstants.PROPERTY_PAGEBREAK.equals(propName)) { if
+		 * (DocxConstants.PROPERTY_VALUE_CONTINUOUS.equals(value)) {
+		 * para.setPageBreak(false); } else { para.setPageBreak(true); } } } }
+		 */
+
+		for (Map.Entry<String, String> entry : mapParaProperties.entrySet()) {
+			log.info("+ [makeParagraph dump map entry]: " + entry.toString());
+		}
+
+		// } else {
+		// log.error("[makeParagraph...mapParaProperties]: Unexpected mapParaProperties
+		// is null]");
+		// }
+
 		// Explicit (@page-break-before) page break on a paragraph should override the
 		// section-level break I
 		// would think.
@@ -1058,62 +1121,83 @@ System.out.println("\n+++ [DEBUG makeParagraph Map]: " + mapParaProperties.toStr
 		}
 
 		Map<String, String> mapRunProperties = new HashMap<String, String>();
-		mapRunProperties.put("aaa", "zzz");
-		
 		mapRunProperties.put("rowFontSize", String.valueOf(mapParaProperties.get("rowFontSize")));
 		mapRunProperties.put("cellFontSize", String.valueOf(mapParaProperties.get("cellFontSize")));
+
+		if (mapRunProperties.get("rowFontSize") == "null") {
+			mapRunProperties.remove("rowFontSize");
+		}
+
+		if (mapRunProperties.get("cellFontSize") == "null") {
+			mapRunProperties.remove("cellFontSize");
+		}
+
+		log.debug("+ [debug makeParagraph() BUILT mapRunProperties]: " + mapRunProperties.toString());
 
 		if (cursor.toFirstChild()) {
 			do {
 				String tagName = cursor.getName().getLocalPart();
 				String namespace = cursor.getName().getNamespaceURI();
+
 				if ("run".equals(tagName)) {
+					log.debug("+ [debug makeParagraph() do... 'run'");
 					makeRun(para, cursor.getObject(), mapRunProperties);
+
 				} else if ("bookmarkStart".equals(tagName)) {
+					log.debug("+ [debug makeParagraph() do... 'bookmarkStart'");
 					makeBookmarkStart(para, cursor);
 				} else if ("bookmarkEnd".equals(tagName)) {
+					log.debug("+ [debug makeParagraph() do... 'bookmarkEnd'");
 					makeBookmarkEnd(para, cursor);
+
 				} else if ("fn".equals(tagName)) {
-					makeFootnote(para, cursor.getObject());
+					log.debug("+ [debug makeParagraph() do... 'fn'");
+					makeFootnote(para, cursor.getObject(), mapRunProperties);
+
 				} else if ("hyperlink".equals(tagName)) {
+					log.debug("+ [debug makeParagraph() do... 'hyperlink'");
 					makeHyperlink(para, cursor);
+
 				} else if ("image".equals(tagName)) {
+					log.debug("+ [debug makeParagraph() do... 'image'");
 					makeImage(para, cursor);
+
 				} else if ("object".equals(tagName)) {
+					log.debug("+ [debug makeParagraph() do... 'object'");
 					makeObject(para, cursor);
+
 				} else if ("page-number-ref".equals(tagName)) {
+					log.debug("+ [debug makeParagraph() do... 'page-number-ref'");
 					makePageNumberRef(para, cursor);
 
 					// Municode custom...
 				} else if ("header-rule".equals(tagName)) {
+					log.debug("+ [debug makeParagraph() do... 'header-rule'");
 					makeHeaderRule(para, cursor);
+
 				} else if ("footer-rule".equals(tagName)) {
+					log.debug("+ [debug makeParagraph() do... 'footer-rule'");
 					makeFooterRule(para, cursor);
+
 				} else if ("rule".equals(tagName)) {
+					log.debug("+ [debug makeParagraph() do... 'rule'");
 					makeRule(para, cursor);
+
 				} else if ("minitoc".equals(tagName)) {
+					log.debug("+ [debug makeParagraph() do... 'minitoc'");
 					if (cursor.getTextValue() != null) {
 						String instr = cursor.getTextValue();
 						buildMiniToc(para, cursor, instr);
 					}
-					// handle nested paragraphs (so DocBook-ish)...
-				} else if ("p".equals(tagName)) {
-					Map<String, String> mapHtmlStyle = new HashMap<String, String>();
-					mapHtmlStyle.put("aaa", "zzz");
-					
-					
-					// Important attributes to manage
-					// START building mapHtmlStyle
+
+				} else if ("p".equals(tagName)) { // handle nested paragraphs (so DocBook-ish)...
+					log.debug("+ [debug makeParagraph() do... 'p' (nested)");
 					String p_htmlstyle = null;
+					String p_pagebreak = null;
 					p_htmlstyle = cursor.getAttributeText(DocxConstants.QNAME_HTMLSTYLE_ATT);
+					p_pagebreak = cursor.getAttributeText(DocxConstants.QNAME_PAGEBREAK_ATT);
+					Map<String, String> mapHtmlStyle = createMapHtmlStyle(p_htmlstyle, p_pagebreak);
 
-					if (null != p_htmlstyle) {
-						mapHtmlStyle.put("htmlstyle", p_htmlstyle);
-					}
-
-					mapHtmlStyle = cleanupMapEntries(mapHtmlStyle);
-					// END building mapHtmlStyle					
-										
 					makeParagraph(para, cursor, mapHtmlStyle);
 
 				} else {
@@ -1137,6 +1221,7 @@ System.out.println("\n+++ [DEBUG makeParagraph Map]: " + mapParaProperties.toStr
 	 * private void makePageNumberRef(XWPFParagraph para, XmlCursor cursor) { String
 	 * fieldData = "PAGE"; makeSimpleField(para, fieldData); }
 	 */
+
 	/**
 	 * Makes a simple field within the specified paragraph.
 	 * 
@@ -1159,42 +1244,54 @@ System.out.println("\n+++ [DEBUG makeParagraph Map]: " + mapParaProperties.toStr
 	 */
 	private void makeRun(XWPFParagraph para, XmlObject xml, Map<String, String> mapRunProperties)
 			throws DocxGenerationException {
+
+		log.info("+ [DEBUG makeRun() - BEGIN mapRunProperties]: " + mapRunProperties.toString());
+		
 		XmlCursor cursor = xml.newCursor();
 
 		String run_row_fontsize = null;
 		String run_cell_fontsize = null;
 
 		if (null != mapRunProperties) {
-			/*
-			 * Integer ctr = 0; // using for-each loop for iteration over
-			 * mapRunProperties.entrySet()
-			 * 
-			 * for (Map.Entry<String,String> entry : mapRunProperties.entrySet()) {
-			 * if(entry.getValue() != null) { ctr += 1; System.out.println("[" + ctr +
-			 * "] Key = " + entry.getKey() + ", Value = " + entry.getValue()); } }
-			 */
-
-			// row_font-size:
-			if (mapRunProperties.containsKey("rowFontSize")) {
+			log.info("+ [DEBUG makeRun() - BEGIN mapRunProperties NOT null]: " + mapRunProperties.toString());
+			
+			if(!mapRunProperties.isEmpty()) {
+				log.info("+ [DEBUG makeRun() - BEGIN mapRunProperties NOT null] [not empty]");
 				run_row_fontsize = mapRunProperties.get("rowFontSize");
-			}
-			// cell_font-size:
-			if (mapRunProperties.containsKey("cellFontSize")) {
 				run_cell_fontsize = mapRunProperties.get("cellFontSize");
+	
+				log.info("+ [DEBUG makeRun() - mapRunProperties [NOT null]] - run_row_fontsize: " + run_row_fontsize);
+				log.info("+ [DEBUG makeRun() - mapRunProperties [NOT null]] - run_cell_fontsize: " + run_cell_fontsize);
+	
+				if (mapRunProperties.containsKey("rowFontSize")) {
+					if(null == mapRunProperties.get("rowFontSize")) { 
+							mapRunProperties.remove("rowFontSize");
+					}
+				}
+
+				if (mapRunProperties.containsKey("cellFontSize")) {
+					if(null == mapRunProperties.get("cellFontSize")) { 
+							mapRunProperties.remove("cellFontSize");
+					}
+				}
+			} else {
+				log.info("+ [DEBUG makeRun() - BEGIN mapRunProperties NOT null]: [IS EMPTY]" + mapRunProperties.toString());
 			}
 			
-			log.debug("+ [DEBUG mapRunProperties]: " + mapRunProperties.toString());
-
 			/* Eliot's hack... */
 			/*
 			 * for (String propName : mapRunProperties.keySet()) { String value =
-			 * mapRunProperties.get(propName); if (value != null) { // FIXME: This is a
-			 * quick hack. Need a more general // and elegant way to manage setting of
-			 * properties. if (DocxConstants.PROPERTY_PAGEBREAK.equals(propName)) { if
-			 * (DocxConstants.PROPERTY_VALUE_CONTINUOUS.equals(value)) {
+			 * mapRunProperties.get(propName);
+			 * 
+			 * if (value != null) { // FIXME: This is a quick hack. Need a more general and
+			 * elegant way to manage setting of properties. if
+			 * (DocxConstants.PROPERTY_PAGEBREAK.equals(propName)) {
+			 * if(DocxConstants.PROPERTY_VALUE_CONTINUOUS.equals(value)) {
 			 * para.setPageBreak(false); } else { para.setPageBreak(true); } } } }
 			 */
 		}
+
+		log.info("+ [DEBUG makeRun() - END mapRunProperties stuff]: " + mapRunProperties.toString());
 
 		XWPFRun run = para.createRun();
 		String styleName = cursor.getAttributeText(DocxConstants.QNAME_STYLE_ATT);
@@ -1212,10 +1309,12 @@ System.out.println("\n+++ [DEBUG makeParagraph Map]: " + mapParaProperties.toStr
 			run.setStyle(styleId);
 		}
 
+		log.info("+ [DEBUG makeRun() - run_row_fontsize]: " + run_row_fontsize);
 		if (null != run_row_fontsize) {
 			run.setFontSize(Integer.valueOf(run_row_fontsize));
 		}
 
+		log.info("+ [DEBUG makeRun() - run_cell_fontsize]: " + run_cell_fontsize);
 		if (null != run_cell_fontsize) {
 			run.setFontSize(Integer.valueOf(run_cell_fontsize));
 		}
@@ -1279,6 +1378,7 @@ System.out.println("\n+++ [DEBUG makeParagraph Map]: " + mapParaProperties.toStr
 		}
 
 		cursor.pop();
+
 	}
 
 	// This is an initial "Quick and Dirty" stab to manage <rule/> (not even close
@@ -1472,22 +1572,27 @@ System.out.println("\n+++ [DEBUG makeParagraph Map]: " + mapParaProperties.toStr
 	 * @param mapFile passed in map return mapFile
 	 */
 	private Map<String, String> cleanupMapEntries(Map<String, String> mapFile) {
-		for (Map.Entry<String, String> entry : mapFile.entrySet()) {
-			if (!entry.getValue().contains(";")) {
-				entry.setValue(entry.getValue() + ";");
-			}
 
-			if (entry.getKey() == "htmlstyle") {
-				// for each value pair ex. font-size:6q
-				for (String retval : entry.getValue().split(";")) {
-					String newKey = retval.substring(0, retval.indexOf(":"));
-					String newValue = retval.substring(retval.indexOf(":") + 1);
+		if (null != mapFile) {
+			for (Map.Entry<String, String> entry : mapFile.entrySet()) {
+				if (!entry.getValue().contains(";")) {
+					entry.setValue(entry.getValue() + ";");
+				}
 
-					mapFile.putIfAbsent(newKey, newValue);
-					// log.debug("+ [debug cleanupMapEntries] Key: " + newKey + "\tValue: " +
-					// mapFile.get(newKey));
+				if (entry.getKey() == "htmlstyle") {
+					// for each value pair ex. font-size:6q
+					for (String retval : entry.getValue().split(";")) {
+						String newKey = retval.substring(0, retval.indexOf(":"));
+						String newValue = retval.substring(retval.indexOf(":") + 1);
+
+						mapFile.putIfAbsent(newKey, newValue);
+						// log.debug("+ [debug cleanupMapEntries] Key: " + newKey + "\tValue: " +
+						// mapFile.get(newKey));
+					}
 				}
 			}
+		} else {
+			log.error("+ cleanupMapEntries received a 'null' mapFile.");
 		}
 
 		return mapFile;
@@ -1637,11 +1742,19 @@ System.out.println("\n+++ [DEBUG makeParagraph Map]: " + mapParaProperties.toStr
 	 * @param para   the paragraph containing the footnote.
 	 * @param cursor Pointing at the &lt;fn> element
 	 */
-	private void makeFootnote(XWPFParagraph para, XmlObject xml) throws DocxGenerationException {
+	private void makeFootnote(XWPFParagraph para, XmlObject xml, Map<String, String> mapRunProperties)
+			throws DocxGenerationException {
 
 		XmlCursor cursor = xml.newCursor();
-
 		String type = cursor.getAttributeText(DocxConstants.QNAME_TYPE_ATT);
+
+		log.debug("+ [debug makeFootnote mapRunProperties]: " + mapRunProperties.toString());
+
+		String fn_htmlstyle = null;
+		String fn_pagebreak = null;
+		fn_htmlstyle = cursor.getAttributeText(DocxConstants.QNAME_HTMLSTYLE_ATT);
+		fn_pagebreak = cursor.getAttributeText(DocxConstants.QNAME_PAGEBREAK_ATT);
+		Map<String, String> mapFNAdditionalParameters = createMapHtmlStyle(fn_htmlstyle, fn_pagebreak);
 
 		XWPFAbstractFootnoteEndnote note = null;
 		if ("endnote".equals(type)) {
@@ -1658,12 +1771,10 @@ System.out.println("\n+++ [DEBUG makeParagraph Map]: " + mapParaProperties.toStr
 				String namespace = cursor.getName().getNamespaceURI();
 				if ("p".equals(tagName)) {
 					XWPFParagraph p = note.createParagraph();
-					Map<String, String> mapHtmlStyle = new HashMap<String, String>();
-					makeParagraph(p, cursor, mapHtmlStyle);
+					makeParagraph(p, cursor, mapFNAdditionalParameters);
 				} else if ("table".equals(tagName)) {
 					XWPFTable table = note.createTable();
-					Map<String, String> mapHtmlStyle = new HashMap<String, String>();
-					makeTable(table, cursor.getObject(), mapHtmlStyle);
+					makeTable(table, cursor.getObject(), mapFNAdditionalParameters);
 				} else {
 					// There are other body-level things that could go in a footnote but
 					// we aren't worrying about them for now.
@@ -2011,8 +2122,6 @@ System.out.println("\n+++ [DEBUG makeParagraph Map]: " + mapParaProperties.toStr
 		// calculated width of the columns, possibly determined by applying percentage
 		// table and column widths.
 		XmlCursor cursor = xml.newCursor();
-
-		mapAdditionalParameters = cleanupMapEntries(mapAdditionalParameters);
 
 		String widthValue = cursor.getAttributeText(DocxConstants.QNAME_WIDTH_ATT);
 		if (null != widthValue) {

@@ -329,10 +329,10 @@ XdmValue result = transformer.applyTemplates(docSource);
 					log.error("Could not delete existing DOCX file \"" + effectiveOutFile.getAbsolutePath() + "\". Skipping SWPX file.");
 					return;
 				}
-			}
+			}			
 	    DocxGenerator generator = new DocxGenerator(inFile, effectiveOutFile, templateDoc);
 			XmlObject xml = XmlObject.Factory.parse(inFile);
-
+log.info("wordinator-MakeDocx-BEFORE generator.generate()");
 			generator.generate(xml);
 			log.info("DOCX file generated.");
 		} catch (Throwable e) {
