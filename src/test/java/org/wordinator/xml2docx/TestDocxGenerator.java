@@ -25,8 +25,7 @@ import org.wordinator.xml2docx.generator.DocxGenerator;
 import junit.framework.TestCase;
 
 public class TestDocxGenerator extends TestCase {
-	
-	
+
 	private static final String DOTX_TEMPLATE_PATH = "docx/Test_Template.dotx";
 
 	@Test
@@ -39,16 +38,16 @@ public class TestDocxGenerator extends TestCase {
 		System.out.println("Input file: " + inFile.getAbsolutePath());
 		System.out.println("Output file: " + outFile.getAbsolutePath());
 		if (!outDir.exists()) {
-			assertTrue("Failed to create directories for output file " + outFile.getAbsolutePath(), outFile.mkdirs());			
+			assertTrue("Failed to create directories for output file " + outFile.getAbsolutePath(), outFile.mkdirs());
 		}
 		if (outFile.exists()) {
 			assertTrue("Failed to delete output file " + outFile.getAbsolutePath(), outFile.delete());
 		}
-		
+
 		XWPFDocument templateDoc = new XWPFDocument(new FileInputStream(templateFile));
 		DocxGenerator maker = new DocxGenerator(inFile, outFile, templateDoc);
 		// Generate the DOCX file:
-		
+
 		try {
 			XmlObject xml = XmlObject.Factory.parse(inFile);
 
@@ -63,17 +62,17 @@ public class TestDocxGenerator extends TestCase {
 			assertEquals("Heading 1 Text", p.getText());
 			System.out.println("Paragraph text='" + p.getText() + "'");
 			while (iterator.hasNext()) {
-			  p = iterator.next();
-			  
-			  // Issue 16: Verify scaling of intrinsic dimensions:
-			  if (p.getText().startsWith("[Image 1]")) {
-			    XWPFRun run = p.getRuns().get(1); // Second run should contain the picture
-			    assertNotNull("Extected a second run", run);
-			    XWPFPicture picture = run.getEmbeddedPictures().get(0);
-			    assertNotNull("Expected a picture", picture);
+				p = iterator.next();
+
+				// Issue 16: Verify scaling of intrinsic dimensions:
+				if (p.getText().startsWith("[Image 1]")) {
+					XWPFRun run = p.getRuns().get(1); // Second run should contain the picture
+					assertNotNull("Extected a second run", run);
+					XWPFPicture picture = run.getEmbeddedPictures().get(0);
+					assertNotNull("Expected a picture", picture);
 //			    assertEquals("[1] Expected width of 100% (111px)", picture.getWidth(), 83.25);
 //			    assertEquals("[1] Expected height (depth) of 50% (55.5px)", picture.getDepth(), 41.63);
-			  }
+				}
 				/*
 				 * if (p.getText().startsWith("[Image 2]")) { XWPFRun run = p.getRuns().get(1);
 				 * // Second run should contain the picture
@@ -90,15 +89,15 @@ public class TestDocxGenerator extends TestCase {
 				 * assertEquals("Expected height (depth) of 50", picture.getDepth(), 50.0); }
 				 */
 			}
-			
+
 		} catch (Exception e) {
 			e.printStackTrace();
 			fail("Got unexpected " + e.getClass().getSimpleName() + ": " + e.getMessage());
 		}
-		
+
 	}
-	
-  @Test
+
+	@Test
 	public void testMakeDocxWithSections() throws Exception {
 		ClassLoader classLoader = getClass().getClassLoader();
 		File inFile = new File(classLoader.getResource("simplewp/simplewpml-test-02.swpx").getFile());
@@ -108,17 +107,17 @@ public class TestDocxGenerator extends TestCase {
 		System.out.println("Input file: " + inFile.getAbsolutePath());
 		System.out.println("Output file: " + outFile.getAbsolutePath());
 		if (!outDir.exists()) {
-			assertTrue("Failed to create directories for output file " + outFile.getAbsolutePath(), outFile.mkdirs());			
+			assertTrue("Failed to create directories for output file " + outFile.getAbsolutePath(), outFile.mkdirs());
 		}
 		if (outFile.exists()) {
 			assertTrue("Failed to delete output file " + outFile.getAbsolutePath(), outFile.delete());
 		}
-		
+
 		XWPFDocument templateDoc = new XWPFDocument(new FileInputStream(templateFile));
-		
+
 		DocxGenerator maker = new DocxGenerator(inFile, outFile, templateDoc);
 		// Generate the DOCX file:
-		
+
 		try {
 			XmlObject xml = XmlObject.Factory.parse(inFile);
 
@@ -132,7 +131,7 @@ public class TestDocxGenerator extends TestCase {
 			assertNotNull("Expected a paragraph", p);
 			assertEquals("Document With Sections", p.getText());
 			System.out.println("Paragraph text='" + p.getText() + "'");
-			
+
 			boolean found = false;
 			for (XWPFParagraph para : doc.getParagraphs()) {
 				String text = para.getParagraphText();
@@ -143,118 +142,120 @@ public class TestDocxGenerator extends TestCase {
 				}
 			}
 			assertTrue("Did not find expected start of first section", found);
-			
+
 			CTSectPr docSectPr = doc.getDocument().getBody().getSectPr();
-			assertEquals("Expected 3 headers", 3, docSectPr.getHeaderReferenceList().size());			
-      assertEquals("Expected 3 footers", 3, docSectPr.getFooterReferenceList().size());
-      
-      // Document-level headers and footers:
-      XWPFHeaderFooterPolicy hfPolicy = doc.getHeaderFooterPolicy();
+			assertEquals("Expected 3 headers", 3, docSectPr.getHeaderReferenceList().size());
+			assertEquals("Expected 3 footers", 3, docSectPr.getFooterReferenceList().size());
 
-      // Headers:
-      XWPFHeader header = hfPolicy.getDefaultHeader();
-      List<IBodyElement> bodyElems = header.getBodyElements();
-      assertEquals("Expected 1 paragraph", 1, bodyElems.size());
-      header = hfPolicy.getEvenPageHeader();
-      bodyElems = header.getBodyElements();
-      assertEquals("Expected 1 paragraph", 1, bodyElems.size());
-      header = hfPolicy.getFirstPageHeader();
-      bodyElems = header.getBodyElements();
-      assertEquals("Expected 1 paragraph", 1, bodyElems.size());
+			// Document-level headers and footers:
+			XWPFHeaderFooterPolicy hfPolicy = doc.getHeaderFooterPolicy();
 
-      // Footers:
-      XWPFFooter footer = hfPolicy.getDefaultFooter();
-      bodyElems = footer.getBodyElements();
-      assertEquals("Expected 1 paragraph", 1, bodyElems.size());
-      footer = hfPolicy.getEvenPageFooter();
-      bodyElems = header.getBodyElements();
-      assertEquals("Expected 1 paragraph", 1, bodyElems.size());
-      footer = hfPolicy.getFirstPageFooter();
-      bodyElems = header.getBodyElements();
-      assertEquals("Expected 1 paragraph", 1, bodyElems.size());
-      
-      // Section headers and footers:
-      
-      boolean foundHeadersOrFooters = false;
-      Iterator<IBodyElement> iter = doc.getBodyElementsIterator();
-      do {
-        IBodyElement e = iter.next();
-        if (e instanceof XWPFParagraph) {
-          p = (XWPFParagraph)e;
-          if (p.getCTP().isSetPPr()) {
-            CTSectPr sectPr = p.getCTP().getPPr().getSectPr();
-            if (sectPr != null) {
-              assertTrue("Expected no more than 3 headers for paragraph, found " + sectPr.getHeaderReferenceList().size(), 
-                  sectPr.getHeaderReferenceList().size() <= 3);
-              assertTrue("Expected no more than 3 footers for paragraph, found " + sectPr.getFooterReferenceList().size(), 
-                  sectPr.getFooterReferenceList().size() <= 3);
-              foundHeadersOrFooters = foundHeadersOrFooters || 
-                  sectPr.getHeaderReferenceList().size() > 0  || 
-                  sectPr.getFooterReferenceList().size() > 0; 
-            }
-          }
-        }
-      } while(iter.hasNext());
-      assertTrue("No section headers or footers", foundHeadersOrFooters);
+			// Headers:
+			XWPFHeader header = hfPolicy.getDefaultHeader();
+			List<IBodyElement> bodyElems = header.getBodyElements();
+			assertEquals("Expected 1 paragraph", 1, bodyElems.size());
+			header = hfPolicy.getEvenPageHeader();
+			bodyElems = header.getBodyElements();
+			assertEquals("Expected 1 paragraph", 1, bodyElems.size());
+			header = hfPolicy.getFirstPageHeader();
+			bodyElems = header.getBodyElements();
+			assertEquals("Expected 1 paragraph", 1, bodyElems.size());
+
+			// Footers:
+			XWPFFooter footer = hfPolicy.getDefaultFooter();
+			bodyElems = footer.getBodyElements();
+			assertEquals("Expected 1 paragraph", 1, bodyElems.size());
+			footer = hfPolicy.getEvenPageFooter();
+			bodyElems = header.getBodyElements();
+			assertEquals("Expected 1 paragraph", 1, bodyElems.size());
+			footer = hfPolicy.getFirstPageFooter();
+			bodyElems = header.getBodyElements();
+			assertEquals("Expected 1 paragraph", 1, bodyElems.size());
+
+			// Section headers and footers:
+
+			boolean foundHeadersOrFooters = false;
+			Iterator<IBodyElement> iter = doc.getBodyElementsIterator();
+			do {
+				IBodyElement e = iter.next();
+				if (e instanceof XWPFParagraph) {
+					p = (XWPFParagraph) e;
+					if (p.getCTP().isSetPPr()) {
+						CTSectPr sectPr = p.getCTP().getPPr().getSectPr();
+						if (sectPr != null) {
+							assertTrue(
+									"Expected no more than 3 headers for paragraph, found "
+											+ sectPr.getHeaderReferenceList().size(),
+									sectPr.getHeaderReferenceList().size() <= 3);
+							assertTrue(
+									"Expected no more than 3 footers for paragraph, found "
+											+ sectPr.getFooterReferenceList().size(),
+									sectPr.getFooterReferenceList().size() <= 3);
+							foundHeadersOrFooters = foundHeadersOrFooters || sectPr.getHeaderReferenceList().size() > 0
+									|| sectPr.getFooterReferenceList().size() > 0;
+						}
+					}
+				}
+			} while (iter.hasNext());
+			assertTrue("No section headers or footers", foundHeadersOrFooters);
 
 		} catch (Exception e) {
 			e.printStackTrace();
 			fail("Got unexpected " + e.getClass().getSimpleName() + ": " + e.getMessage());
 		}
-		
+
 	}
 
-  @Test
-  public void testCopyNumberingDefinitions() throws Exception {
-    ClassLoader classLoader = getClass().getClassLoader();
-    File inFile = new File(classLoader.getResource("simplewp/simplewpml-test-03.swpx").getFile());
-    File templateFile = new File(classLoader.getResource(DOTX_TEMPLATE_PATH).getFile());
-    File outFile = new File("out/output-03.docx");
-    File outDir = outFile.getParentFile();
-    System.out.println("Input file: " + inFile.getAbsolutePath());
-    System.out.println("Output file: " + outFile.getAbsolutePath());
-    if (!outDir.exists()) {
-      assertTrue("Failed to create directories for output file " + outFile.getAbsolutePath(), outFile.mkdirs());      
-    }
-    if (outFile.exists()) {
-      assertTrue("Failed to delete output file " + outFile.getAbsolutePath(), outFile.delete());
-    }
-    
-    XWPFDocument templateDoc = new XWPFDocument(new FileInputStream(templateFile));
-    
-    DocxGenerator maker = new DocxGenerator(inFile, outFile, templateDoc);
-    // Generate the DOCX file:
-    
-    try {
-      XmlObject xml = XmlObject.Factory.parse(inFile);
+	@Test
+	public void testCopyNumberingDefinitions() throws Exception {
+		ClassLoader classLoader = getClass().getClassLoader();
+		File inFile = new File(classLoader.getResource("simplewp/simplewpml-test-03.swpx").getFile());
+		File templateFile = new File(classLoader.getResource(DOTX_TEMPLATE_PATH).getFile());
+		File outFile = new File("out/output-03.docx");
+		File outDir = outFile.getParentFile();
+		System.out.println("Input file: " + inFile.getAbsolutePath());
+		System.out.println("Output file: " + outFile.getAbsolutePath());
+		if (!outDir.exists()) {
+			assertTrue("Failed to create directories for output file " + outFile.getAbsolutePath(), outFile.mkdirs());
+		}
+		if (outFile.exists()) {
+			assertTrue("Failed to delete output file " + outFile.getAbsolutePath(), outFile.delete());
+		}
 
-      maker.generate(xml);
-      assertTrue("DOCX file does not exist", outFile.exists());
-      FileInputStream inStream = new FileInputStream(outFile);
-      XWPFDocument doc = new XWPFDocument(inStream);
-      assertNotNull(doc);
-      Iterator<XWPFParagraph> iterator = doc.getParagraphsIterator();
-      XWPFParagraph p = iterator.next();
-      assertNotNull("Expected a paragraph", p);
-      assertEquals("Test of List Formatting", p.getText());
-      System.out.println("Paragraph text='" + p.getText() + "'");
-      XWPFNumbering numbering = doc.getNumbering();
-      assertNotNull("No numbering", numbering);
+		XWPFDocument templateDoc = new XWPFDocument(new FileInputStream(templateFile));
 
-      XWPFAbstractNum abstractNumber;
-      abstractNumber = numbering.getAbstractNum(BigInteger.valueOf(9));
-      assertNotNull("No abstract number '9'", abstractNumber);
-      
-      XWPFNum num;
-      num = numbering.getNum(BigInteger.valueOf(9));
-      assertNotNull("No num '9'", num);
-      
-      
-    } catch (Exception e) {
-      e.printStackTrace();
-      fail("Got unexpected " + e.getClass().getSimpleName() + ": " + e.getMessage());
-    }
-    
-  }
+		DocxGenerator maker = new DocxGenerator(inFile, outFile, templateDoc);
+		// Generate the DOCX file:
+
+		try {
+			XmlObject xml = XmlObject.Factory.parse(inFile);
+
+			maker.generate(xml);
+			assertTrue("DOCX file does not exist", outFile.exists());
+			FileInputStream inStream = new FileInputStream(outFile);
+			XWPFDocument doc = new XWPFDocument(inStream);
+			assertNotNull(doc);
+			Iterator<XWPFParagraph> iterator = doc.getParagraphsIterator();
+			XWPFParagraph p = iterator.next();
+			assertNotNull("Expected a paragraph", p);
+			assertEquals("Test of List Formatting", p.getText());
+			System.out.println("Paragraph text='" + p.getText() + "'");
+			XWPFNumbering numbering = doc.getNumbering();
+			assertNotNull("No numbering", numbering);
+
+			XWPFAbstractNum abstractNumber;
+			abstractNumber = numbering.getAbstractNum(BigInteger.valueOf(9));
+			assertNotNull("No abstract number '9'", abstractNumber);
+
+			XWPFNum num;
+			num = numbering.getNum(BigInteger.valueOf(9));
+			assertNotNull("No num '9'", num);
+
+		} catch (Exception e) {
+			e.printStackTrace();
+			fail("Got unexpected " + e.getClass().getSimpleName() + ": " + e.getMessage());
+		}
+
+	}
 
 }

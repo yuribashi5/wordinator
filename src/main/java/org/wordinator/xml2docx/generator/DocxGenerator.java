@@ -25,6 +25,7 @@ import javax.imageio.ImageIO;
 import javax.xml.namespace.QName;
 
 import org.apache.commons.io.FilenameUtils;
+import org.apache.commons.lang3.StringUtils;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 import org.apache.poi.ss.formula.eval.NotImplementedException;
@@ -97,6 +98,7 @@ import org.openxmlformats.schemas.wordprocessingml.x2006.main.STStyleType;
 import org.openxmlformats.schemas.wordprocessingml.x2006.main.STTextDirection;
 import org.openxmlformats.schemas.wordprocessingml.x2006.main.STVerticalAlignRun;
 import org.openxmlformats.schemas.wordprocessingml.x2006.main.impl.STOnOffImpl;
+import org.wordinator.xml2docx.MakeDocx;
 import org.wordinator.xml2docx.xwpf.model.XWPFHeaderFooterPolicy;
 
 /**
@@ -290,7 +292,7 @@ public class DocxGenerator {
 
 	}
 
-	public static final Logger log = LogManager.getLogger();
+	public static final Logger log = LogManager.getLogger(DocxGenerator.class.getSimpleName());
 
 	private File outFile;
 	private int dotsPerInch = 72; /* DPI */
@@ -341,35 +343,35 @@ public class DocxGenerator {
 	 */
 	private void constructDoc(XWPFDocument doc, XmlObject xml) throws DocxGenerationException {
 
-		log.info("+ DocxGenerator-constructDoc() BEGIN...");
+		//log.info("+ DocxGenerator-constructDoc() BEGIN...");
 		XmlCursor cursor = xml.newCursor();
-		log.info("+ DocxGenerator-constructDoc() BEFORE toFirstChild()");
+		//log.info("+ DocxGenerator-constructDoc() BEFORE toFirstChild()");
 		cursor.toFirstChild(); // Put us on the root element of the document
-		log.info("+ DocxGenerator-constructDoc() BEFORE push()");
+		//log.info("+ DocxGenerator-constructDoc() BEFORE push()");
 		cursor.push();
-		log.info("+ DocxGenerator-constructDoc() BEFORE pageSequenceProperties");
+		//log.info("+ DocxGenerator-constructDoc() BEFORE pageSequenceProperties");
 		XmlObject pageSequenceProperties = null;
 
-		log.info("+ DocxGenerator-constructDoc() BEFORE toChild(page-sequence-properties)");
+		//log.info("+ DocxGenerator-constructDoc() BEFORE toChild(page-sequence-properties)");
 		
 		if (cursor.toChild(new QName(DocxConstants.SIMPLE_WP_NS, "page-sequence-properties"))) {
 			// Set up document-level headers. These will apply to the whole
 			// document if there are no sections, or to the last section if
 			// there are sections. Results in a w:sectPr as the last child
 			// of w:body.
-			log.info("+ DocxGenerator-constructDoc()-IF-page-sequence-properties BEFORE setupPageSequence()");
+			//log.info("+ DocxGenerator-constructDoc()-IF-page-sequence-properties BEFORE setupPageSequence()");
 			setupPageSequence(doc, cursor.getObject());
-			log.info("+ DocxGenerator-constructDoc()-IF-page-sequence-properties BEFORE pageSequenceProperties=");
+			//log.info("+ DocxGenerator-constructDoc()-IF-page-sequence-properties BEFORE pageSequenceProperties=");
 			pageSequenceProperties = cursor.getObject();
 		}
 
 		cursor.pop();
 
-		log.info("+ DocxGenerator-constructDoc() BEFORE cursor to 'body'");
+		//log.info("+ DocxGenerator-constructDoc() BEFORE cursor to 'body'");
 		cursor.toChild(new QName(DocxConstants.SIMPLE_WP_NS, "body"));
-		log.info("+ DocxGenerator-constructDoc() AFTER cursor to 'body'");
+		//log.info("+ DocxGenerator-constructDoc() AFTER cursor to 'body'");
 
-		log.info("+ DocxGenerator-constructDoc() BEFORE handleBody()");
+		//log.info("+ DocxGenerator-constructDoc() BEFORE handleBody()");
 		handleBody(doc, cursor.getObject(), pageSequenceProperties);
 
 	}
@@ -389,7 +391,7 @@ public class DocxGenerator {
 			throws DocxGenerationException {
 
 		if (log.isDebugEnabled()) {
-			log.debug("handleBody(): starting...");
+			//log.debug("handleBody(): starting...");
 		}
 
 		XmlCursor cursor = xml.newCursor();
@@ -397,7 +399,7 @@ public class DocxGenerator {
 		if (cursor.toFirstChild()) {
 			do {
 				
-				log.debug("+ [debug BEGIN handleBody Do-loop]");
+				//log.debug("+ [debug BEGIN handleBody Do-loop]");
 				
 				String tagName = cursor.getName().getLocalPart();
 				String namespace = cursor.getName().getNamespaceURI();
@@ -604,7 +606,7 @@ public class DocxGenerator {
 		setPageNumberProperties(cursor, sectPr);
 		cursor.push();
 
-		log.info("+ DocxGenerator-setupPageSequence() BEFORE headers-and-footers");
+		//log.info("+ DocxGenerator-setupPageSequence() BEFORE headers-and-footers");
 		if (cursor.toChild(new QName(DocxConstants.SIMPLE_WP_NS, "headers-and-footers"))) {
 			constructHeadersAndFooters(doc, cursor.getObject());
 		}
@@ -612,7 +614,7 @@ public class DocxGenerator {
 		cursor.pop();
 		cursor.push();
 
-		log.info("+ DocxGenerator-setupPageSequence() BEFORE page-size");
+		//log.info("+ DocxGenerator-setupPageSequence() BEFORE page-size");
 		if (cursor.toChild(new QName(DocxConstants.SIMPLE_WP_NS, "page-size"))) {
 			setPageSize(cursor, sectPr);
 		}
@@ -683,7 +685,7 @@ public class DocxGenerator {
 	 * @throws DocxGenerationException
 	 */
 	private void constructHeadersAndFooters(XWPFDocument doc, XmlObject xml) throws DocxGenerationException {
-		log.info("+ DocxGenerator-...-constructHeadersAndFooters(doc, xml");
+		//log.info("+ DocxGenerator-...-constructHeadersAndFooters(doc, xml");
 		constructHeadersAndFooters(doc, xml, null);
 	}
 
@@ -701,7 +703,7 @@ public class DocxGenerator {
 	 */
 	private void constructHeadersAndFooters(XWPFDocument doc, XmlObject xml, CTSectPr sectPr)
 			throws DocxGenerationException {
-		log.info("+ DocxGenerator-...-constructHeadersAndFooters(doc, xml, sectPr");
+		//log.info("+ DocxGenerator-...-constructHeadersAndFooters(doc, xml, sectPr");
 		XmlCursor cursor = xml.newCursor();
 
 		boolean haveOddHeader = false;
@@ -719,13 +721,13 @@ public class DocxGenerator {
 
 			do {
 
-				log.info("+ DocxGenerator-...-constructHeadersAndFooters(doc, xml, sectPr)- do...");
+				//log.info("+ DocxGenerator-...-constructHeadersAndFooters(doc, xml, sectPr)- do...");
 				String tagName = cursor.getName().getLocalPart();
 				String namespace = cursor.getName().getNamespaceURI();
 				List<CTHdrFtrRef> refs = null;
 
 				if ("header".equals(tagName)) {
-					log.info("+ DocxGenerator-...-constructHeadersAndFooters(doc, xml, sectPr)- do...'header'");
+					//log.info("+ DocxGenerator-...-constructHeadersAndFooters(doc, xml, sectPr)- do...'header'");
 					HeaderFooterType type = getHeaderFooterType(cursor);
 
 					if (type == HeaderFooterType.FIRST) {
@@ -749,12 +751,12 @@ public class DocxGenerator {
 					}
 
 					if (isDocument) {
-						log.info("+ DocxGenerator-...-constructHeadersAndFooters()- do...'header' - isDocument");
+						//log.info("+ DocxGenerator-...-constructHeadersAndFooters()- do...'header' - isDocument");
 						// Make document-level header
 						XWPFHeader header = doc.createHeader(type);
 						makeHeaderFooter(header, cursor.getObject());
 					} else {
-						log.info("+ DocxGenerator-...-constructHeadersAndFooters()- do...'header' - !isDocument");
+						//log.info("+ DocxGenerator-...-constructHeadersAndFooters()- do...'header' - !isDocument");
 						XWPFHeader header = sectionHfPolicy.createHeader(getSTHFTypeForXWPFHFType(type));
 						makeHeaderFooter(header, cursor.getObject());
 						refs = sectPr.getHeaderReferenceList();
@@ -763,7 +765,7 @@ public class DocxGenerator {
 						setHeaderFooterRefType(type, ref);
 					}
 				} else if ("footer".equals(tagName)) {
-					log.info("+ DocxGenerator-...-constructHeadersAndFooters(doc, xml, sectPr)- do...'footer'");
+					//log.info("+ DocxGenerator-...-constructHeadersAndFooters(doc, xml, sectPr)- do...'footer'");
 					HeaderFooterType type = getHeaderFooterType(cursor);
 
 					if (type == HeaderFooterType.DEFAULT) {
@@ -952,12 +954,12 @@ public class DocxGenerator {
 		if (cursor.toFirstChild()) {
 			do {
 
-				log.info("+ DocxGenerator-...-makeHeaderFooter()- do...");
+				//log.info("+ DocxGenerator-...-makeHeaderFooter()- do...");
 				String tagName = cursor.getName().getLocalPart();
 				String namespace = cursor.getName().getNamespaceURI();
 
 				if ("p".equals(tagName)) {
-					log.info("+ DocxGenerator-...-makeHeaderFooter()- do...'p'");
+					//log.info("+ DocxGenerator-...-makeHeaderFooter()- do...'p'");
 					XWPFParagraph p = headerFooter.createParagraph();
 
 					String hf_htmlstyle = null;
@@ -1121,18 +1123,20 @@ public class DocxGenerator {
 		}
 
 		Map<String, String> mapRunProperties = new HashMap<String, String>();
-		mapRunProperties.put("rowFontSize", String.valueOf(mapParaProperties.get("rowFontSize")));
-		mapRunProperties.put("cellFontSize", String.valueOf(mapParaProperties.get("cellFontSize")));
 
-		if (mapRunProperties.get("rowFontSize") == "null") {
+		if (StringUtils.isEmpty(mapParaProperties.get("rowFontSize"))) {
 			mapRunProperties.remove("rowFontSize");
+		} else {
+			mapRunProperties.put("rowFontSize", String.valueOf(mapParaProperties.get("rowFontSize")));
 		}
 
-		if (mapRunProperties.get("cellFontSize") == "null") {
+		if (StringUtils.isEmpty(mapRunProperties.get("cellFontSize"))) {
 			mapRunProperties.remove("cellFontSize");
+		} else {
+			mapRunProperties.put("cellFontSize", String.valueOf(mapParaProperties.get("cellFontSize")));			
 		}
 
-		log.debug("+ [debug makeParagraph() BUILT mapRunProperties]: " + mapRunProperties.toString());
+		//log.debug("+ [debug makeParagraph() BUILT mapRunProperties]: " + mapRunProperties.toString());
 
 		if (cursor.toFirstChild()) {
 			do {
@@ -1144,47 +1148,47 @@ public class DocxGenerator {
 					makeRun(para, cursor.getObject(), mapRunProperties);
 
 				} else if ("bookmarkStart".equals(tagName)) {
-					log.debug("+ [debug makeParagraph() do... 'bookmarkStart'");
+					//log.debug("+ [debug makeParagraph() do... 'bookmarkStart'");
 					makeBookmarkStart(para, cursor);
 				} else if ("bookmarkEnd".equals(tagName)) {
-					log.debug("+ [debug makeParagraph() do... 'bookmarkEnd'");
+					//log.debug("+ [debug makeParagraph() do... 'bookmarkEnd'");
 					makeBookmarkEnd(para, cursor);
 
 				} else if ("fn".equals(tagName)) {
-					log.debug("+ [debug makeParagraph() do... 'fn'");
+					//log.debug("+ [debug makeParagraph() do... 'fn'");
 					makeFootnote(para, cursor.getObject(), mapRunProperties);
 
 				} else if ("hyperlink".equals(tagName)) {
-					log.debug("+ [debug makeParagraph() do... 'hyperlink'");
+					//log.debug("+ [debug makeParagraph() do... 'hyperlink'");
 					makeHyperlink(para, cursor);
 
 				} else if ("image".equals(tagName)) {
-					log.debug("+ [debug makeParagraph() do... 'image'");
+					//log.debug("+ [debug makeParagraph() do... 'image'");
 					makeImage(para, cursor);
 
 				} else if ("object".equals(tagName)) {
-					log.debug("+ [debug makeParagraph() do... 'object'");
+					//log.debug("+ [debug makeParagraph() do... 'object'");
 					makeObject(para, cursor);
 
 				} else if ("page-number-ref".equals(tagName)) {
-					log.debug("+ [debug makeParagraph() do... 'page-number-ref'");
+					//log.debug("+ [debug makeParagraph() do... 'page-number-ref'");
 					makePageNumberRef(para, cursor);
 
 					// Municode custom...
 				} else if ("header-rule".equals(tagName)) {
-					log.debug("+ [debug makeParagraph() do... 'header-rule'");
+					//log.debug("+ [debug makeParagraph() do... 'header-rule'");
 					makeHeaderRule(para, cursor);
 
 				} else if ("footer-rule".equals(tagName)) {
-					log.debug("+ [debug makeParagraph() do... 'footer-rule'");
+					//log.debug("+ [debug makeParagraph() do... 'footer-rule'");
 					makeFooterRule(para, cursor);
 
 				} else if ("rule".equals(tagName)) {
-					log.debug("+ [debug makeParagraph() do... 'rule'");
+					//log.debug("+ [debug makeParagraph() do... 'rule'");
 					makeRule(para, cursor);
 
 				} else if ("minitoc".equals(tagName)) {
-					log.debug("+ [debug makeParagraph() do... 'minitoc'");
+					//log.debug("+ [debug makeParagraph() do... 'minitoc'");
 					if (cursor.getTextValue() != null) {
 						String instr = cursor.getTextValue();
 						buildMiniToc(para, cursor, instr);
@@ -1245,7 +1249,7 @@ public class DocxGenerator {
 	private void makeRun(XWPFParagraph para, XmlObject xml, Map<String, String> mapRunProperties)
 			throws DocxGenerationException {
 
-		log.info("+ [DEBUG makeRun() - BEGIN mapRunProperties]: " + mapRunProperties.toString());
+		//log.info("+ [DEBUG makeRun() - BEGIN mapRunProperties]: " + mapRunProperties.toString());
 		
 		XmlCursor cursor = xml.newCursor();
 
@@ -1253,45 +1257,39 @@ public class DocxGenerator {
 		String run_cell_fontsize = null;
 
 		if (null != mapRunProperties) {
-			log.info("+ [DEBUG makeRun() - BEGIN mapRunProperties NOT null]: " + mapRunProperties.toString());
-			
-			if(!mapRunProperties.isEmpty()) {
-				log.info("+ [DEBUG makeRun() - BEGIN mapRunProperties NOT null] [not empty]");
-				run_row_fontsize = mapRunProperties.get("rowFontSize");
-				run_cell_fontsize = mapRunProperties.get("cellFontSize");
-	
-				log.info("+ [DEBUG makeRun() - mapRunProperties [NOT null]] - run_row_fontsize: " + run_row_fontsize);
-				log.info("+ [DEBUG makeRun() - mapRunProperties [NOT null]] - run_cell_fontsize: " + run_cell_fontsize);
-	
-				if (mapRunProperties.containsKey("rowFontSize")) {
-					if(null == mapRunProperties.get("rowFontSize")) { 
-							mapRunProperties.remove("rowFontSize");
-					}
-				}
+			//log.info("+ [DEBUG makeRun() - BEGIN mapRunProperties NOT null]: " + mapRunProperties.toString());
 
-				if (mapRunProperties.containsKey("cellFontSize")) {
-					if(null == mapRunProperties.get("cellFontSize")) { 
-							mapRunProperties.remove("cellFontSize");
-					}
+			if (mapRunProperties.containsKey("rowFontSize")) {
+				if(StringUtils.isEmpty(mapRunProperties.get("rowFontSize"))) { 
+					mapRunProperties.remove("rowFontSize");
+				} else {
+					run_row_fontsize = mapRunProperties.get("rowFontSize");
 				}
-			} else {
-				log.info("+ [DEBUG makeRun() - BEGIN mapRunProperties NOT null]: [IS EMPTY]" + mapRunProperties.toString());
 			}
-			
-			/* Eliot's hack... */
-			/*
-			 * for (String propName : mapRunProperties.keySet()) { String value =
-			 * mapRunProperties.get(propName);
-			 * 
-			 * if (value != null) { // FIXME: This is a quick hack. Need a more general and
-			 * elegant way to manage setting of properties. if
-			 * (DocxConstants.PROPERTY_PAGEBREAK.equals(propName)) {
-			 * if(DocxConstants.PROPERTY_VALUE_CONTINUOUS.equals(value)) {
-			 * para.setPageBreak(false); } else { para.setPageBreak(true); } } } }
-			 */
-		}
 
-		log.info("+ [DEBUG makeRun() - END mapRunProperties stuff]: " + mapRunProperties.toString());
+			if (mapRunProperties.containsKey("cellFontSize")) {
+				if(StringUtils.isEmpty(mapRunProperties.get("cellFontSize"))) { 
+					mapRunProperties.remove("cellFontSize");
+				} else {
+					run_cell_fontsize = mapRunProperties.get("cellFontSize");
+				}
+			}
+		}
+		
+		/* Eliot's hack... */
+		/*
+		 * for (String propName : mapRunProperties.keySet()) { String value =
+		 * mapRunProperties.get(propName);
+		 * 
+		 * if (value != null) { // FIXME: This is a quick hack. Need a more general and
+		 * elegant way to manage setting of properties. if
+		 * (DocxConstants.PROPERTY_PAGEBREAK.equals(propName)) {
+		 * if(DocxConstants.PROPERTY_VALUE_CONTINUOUS.equals(value)) {
+		 * para.setPageBreak(false); } else { para.setPageBreak(true); } } } }
+		 */
+		if(!StringUtils.isEmpty(run_row_fontsize) || !StringUtils.isEmpty(run_cell_fontsize)) {
+			log.info("+ [DEBUG makeRun() - END mapRunProperties stuff]: " + mapRunProperties.toString());
+		}
 
 		XWPFRun run = para.createRun();
 		String styleName = cursor.getAttributeText(DocxConstants.QNAME_STYLE_ATT);
