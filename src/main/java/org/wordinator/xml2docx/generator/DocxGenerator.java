@@ -409,18 +409,18 @@ public class DocxGenerator {
 					
 				if ("p".equals(tagName)) {
 
-					log.debug("+ [debug handleBody 'p'");
+					//log.debug("+ [debug handleBody 'p'");
 					// START building mapBodyAdditionalParameters
 					htmlstyle = cursor.getAttributeText(DocxConstants.QNAME_HTMLSTYLE_ATT);
 					pagebreak = cursor.getAttributeText(DocxConstants.QNAME_PAGEBREAK_ATT);
 	
 					Map<String, String> mapParaAdditionalParameters = new HashMap<String, String>();
 	
-					if (null != htmlstyle) {
+					if (!StringUtils.isEmpty(htmlstyle)) {
 						mapParaAdditionalParameters.put("htmlstyle", htmlstyle);
 					}
 	
-					if (null != pagebreak) {
+					if ( !StringUtils.isEmpty(pagebreak) && "true".equals(pagebreak))	{
 						mapParaAdditionalParameters.put("pagebreak", pagebreak);
 					}
 	
@@ -974,12 +974,7 @@ public class DocxGenerator {
 						hf_pagebreak = "";
 					}
 					
-					log.info("+ DocxGenerator-...-makeHeaderFooter()- do...'p' - hf_htmlstyle: " + hf_htmlstyle);
-					log.info("+ DocxGenerator-...-makeHeaderFooter()- do...'p' - hf_pagebreak: " + hf_pagebreak);
-					log.info("+ DocxGenerator-...-makeHeaderFooter()- do...'p' - BEFORE mapHFAdditionalParameters map creation");
 					Map<String, String> mapHFAdditionalParameters = createMapHtmlStyle(hf_htmlstyle, hf_pagebreak);
-					log.info("+ DocxGenerator-...-makeHeaderFooter()- do...'p' - AFTER mapHFAdditionalParameters map creation");
-
 					makeParagraph(p, cursor, mapHFAdditionalParameters);
 
 				} else if ("table".equals(tagName)) {
@@ -1002,10 +997,9 @@ public class DocxGenerator {
 					 * if (null != table_pagebreak) {
 					 * mapTableAdditionalParameters.putIfAbsent("pagebreak", table_pagebreak); } //
 					 * finished building mapTableAdditionalParameters
-					 */
-
-					Map<String, String> mapTableAdditionalParameters = createMapHtmlStyle(table_htmlstyle,
-							table_pagebreak);
+					 */					
+					
+					Map<String, String> mapTableAdditionalParameters = createMapHtmlStyle(table_htmlstyle, table_pagebreak);
 					makeTable(table, cursor.getObject(), mapTableAdditionalParameters);
 				} else {
 					// There are other body-level things that could go in a footnote but
@@ -1049,13 +1043,18 @@ public class DocxGenerator {
 	private XWPFParagraph makeParagraph(XWPFParagraph para, XmlCursor cursor, Map<String, String> mapParaProperties)
 			throws DocxGenerationException {
 
-		System.out.println("\n+++ [DEBUG makeParagraph Map]: " + mapParaProperties.toString() + "\n");
+		//System.out.println("\n+++ [DEBUG makeParagraph Map]: " + mapParaProperties.toString());
 
 		cursor.push();
 		String styleName = cursor.getAttributeText(DocxConstants.QNAME_STYLE_ATT);
 		String styleId = cursor.getAttributeText(DocxConstants.QNAME_STYLEID_ATT);
 
-		// mapParaProperties = cleanupMapEntries(mapParaProperties);
+		mapParaProperties = cleanupMapEntries(mapParaProperties);
+		if (!StringUtils.isEmpty(mapParaProperties.toString())
+			&& mapParaProperties.toString() != "{}"	
+			) {
+			log.info("+ [debug makeParagraph() After cleanupMapEntries]: " + mapParaProperties.toString());
+		}
 
 		if (null != styleName && null == styleId) {
 			// Look up the style by name:
@@ -1102,10 +1101,11 @@ public class DocxGenerator {
 		 * (DocxConstants.PROPERTY_VALUE_CONTINUOUS.equals(value)) {
 		 * para.setPageBreak(false); } else { para.setPageBreak(true); } } } }
 		 */
-
-		for (Map.Entry<String, String> entry : mapParaProperties.entrySet()) {
-			log.info("+ [makeParagraph dump map entry]: " + entry.toString());
-		}
+		
+//		Integer i = 1;
+//		for (Map.Entry<String, String> entry : mapParaProperties.entrySet()) {
+//			log.info("+ (" + i++ + ") [makeParagraph dump map entry]: " + entry.toString());
+//		}
 
 		// } else {
 		// log.error("[makeParagraph...mapParaProperties]: Unexpected mapParaProperties
@@ -1121,8 +1121,8 @@ public class DocxGenerator {
 			boolean breakValue = Boolean.valueOf(pageBreakBefore);
 			para.setPageBreak(breakValue);
 		}
-
-		Map<String, String> mapRunProperties = new HashMap<String, String>();
+		
+		Map<String, String> mapRunProperties = mapParaProperties;
 
 		if (StringUtils.isEmpty(mapParaProperties.get("rowFontSize"))) {
 			mapRunProperties.remove("rowFontSize");
@@ -1136,7 +1136,9 @@ public class DocxGenerator {
 			mapRunProperties.put("cellFontSize", String.valueOf(mapParaProperties.get("cellFontSize")));			
 		}
 
-		//log.debug("+ [debug makeParagraph() BUILT mapRunProperties]: " + mapRunProperties.toString());
+		if (mapRunProperties.containsValue("font-size")) {
+			log.debug("+ [debug makeParagraph() BUILT mapRunProperties]: " + mapRunProperties.toString());
+		}
 
 		if (cursor.toFirstChild()) {
 			do {
@@ -1144,7 +1146,7 @@ public class DocxGenerator {
 				String namespace = cursor.getName().getNamespaceURI();
 
 				if ("run".equals(tagName)) {
-					log.debug("+ [debug makeParagraph() do... 'run'");
+					//log.debug("+ [debug makeParagraph() do... 'run'");
 					makeRun(para, cursor.getObject(), mapRunProperties);
 
 				} else if ("bookmarkStart".equals(tagName)) {
@@ -1195,7 +1197,7 @@ public class DocxGenerator {
 					}
 
 				} else if ("p".equals(tagName)) { // handle nested paragraphs (so DocBook-ish)...
-					log.debug("+ [debug makeParagraph() do... 'p' (nested)");
+					//log.debug("+ [debug makeParagraph() do... 'p' (nested)");
 					String p_htmlstyle = null;
 					String p_pagebreak = null;
 					p_htmlstyle = cursor.getAttributeText(DocxConstants.QNAME_HTMLSTYLE_ATT);
@@ -1244,26 +1246,36 @@ public class DocxGenerator {
 	 * 
 	 * @param para          The output paragraph to add the run to.
 	 * @param xml           The <run> element
-	 * @param mapProperties - optional zero or more optional parameters [Raymond]
+	 * @param mapProperties Zero or more optional parameters
 	 */
 	private void makeRun(XWPFParagraph para, XmlObject xml, Map<String, String> mapRunProperties)
 			throws DocxGenerationException {
 
-		//log.info("+ [DEBUG makeRun() - BEGIN mapRunProperties]: " + mapRunProperties.toString());
+		if (mapRunProperties.containsKey("font-size")) {
+			log.info("+ [DEBUG makeRun() - BEGIN mapRunProperties]: " + mapRunProperties.toString());
+		}
 		
 		XmlCursor cursor = xml.newCursor();
 
-		String run_row_fontsize = null;
-		String run_cell_fontsize = null;
+		String run_fontsize = null;		// general paragraph
+		//String run_row_fontsize = null;
+		//String run_cell_fontsize = null;
 
-		if (null != mapRunProperties) {
-			//log.info("+ [DEBUG makeRun() - BEGIN mapRunProperties NOT null]: " + mapRunProperties.toString());
+		if (!StringUtils.isEmpty(mapRunProperties.toString())) {
 
+			if (mapRunProperties.containsKey("font-size")) {
+				if(StringUtils.isEmpty(mapRunProperties.get("font-size"))) { 
+					mapRunProperties.remove("font-size");
+				} else {
+					run_fontsize = mapRunProperties.get("font-size");
+				}
+			}
+			
 			if (mapRunProperties.containsKey("rowFontSize")) {
 				if(StringUtils.isEmpty(mapRunProperties.get("rowFontSize"))) { 
 					mapRunProperties.remove("rowFontSize");
 				} else {
-					run_row_fontsize = mapRunProperties.get("rowFontSize");
+					run_fontsize = mapRunProperties.get("rowFontSize");
 				}
 			}
 
@@ -1271,8 +1283,12 @@ public class DocxGenerator {
 				if(StringUtils.isEmpty(mapRunProperties.get("cellFontSize"))) { 
 					mapRunProperties.remove("cellFontSize");
 				} else {
-					run_cell_fontsize = mapRunProperties.get("cellFontSize");
+					run_fontsize = mapRunProperties.get("cellFontSize");
 				}
+			}
+			
+			if (!StringUtils.isEmpty(run_fontsize)) {
+				log.info("+ [debug makeRun() run_fontsize]: " + run_fontsize);
 			}
 		}
 		
@@ -1287,9 +1303,6 @@ public class DocxGenerator {
 		 * if(DocxConstants.PROPERTY_VALUE_CONTINUOUS.equals(value)) {
 		 * para.setPageBreak(false); } else { para.setPageBreak(true); } } } }
 		 */
-		if(!StringUtils.isEmpty(run_row_fontsize) || !StringUtils.isEmpty(run_cell_fontsize)) {
-			log.info("+ [DEBUG makeRun() - END mapRunProperties stuff]: " + mapRunProperties.toString());
-		}
 
 		XWPFRun run = para.createRun();
 		String styleName = cursor.getAttributeText(DocxConstants.QNAME_STYLE_ATT);
@@ -1307,16 +1320,25 @@ public class DocxGenerator {
 			run.setStyle(styleId);
 		}
 
-		log.info("+ [DEBUG makeRun() - run_row_fontsize]: " + run_row_fontsize);
-		if (null != run_row_fontsize) {
-			run.setFontSize(Integer.valueOf(run_row_fontsize));
+		if(!StringUtils.isEmpty(run_fontsize)) {
+			log.info("+ [DEBUG makeRun() - END mapRunProperties stuff]: " + mapRunProperties.toString());
+			run.setFontSize(Integer.valueOf(run_fontsize) * 2);
 		}
-
-		log.info("+ [DEBUG makeRun() - run_cell_fontsize]: " + run_cell_fontsize);
-		if (null != run_cell_fontsize) {
-			run.setFontSize(Integer.valueOf(run_cell_fontsize));
-		}
-
+		
+//		if (!StringUtils.isEmpty(run_fontsize)) {
+//		log.info("+ [DEBUG makeRun() - fontsize]: " + run_row_fontsize);
+//			run.setFontSize(Integer.valueOf(run_fontsize) * 2);
+//		}
+//		
+//		if (!StringUtils.isEmpty(run_row_fontsize)) {
+//			run.setFontSize(Integer.valueOf(run_row_fontsize) * 2);
+//		}
+//
+//		if (!StringUtils.isEmpty(run_cell_fontsize)) {
+//			log.info("+ [DEBUG makeRun() - run_cell_fontsize]: " + run_cell_fontsize);
+//			run.setFontSize(Integer.valueOf(run_cell_fontsize) * 2);
+//		}
+		
 		handleFormattingAttributes(run, xml);
 
 		cursor.toLastAttribute();
@@ -1570,29 +1592,64 @@ public class DocxGenerator {
 	 * @param mapFile passed in map return mapFile
 	 */
 	private Map<String, String> cleanupMapEntries(Map<String, String> mapFile) {
-
+		String myKey = null;
+		String myValue = null;
+		
+		String myStr = mapFile.toString();
+		
+		log.debug("\n+ [debug cleanupMapEntries() - myStr]=" + myStr + "\n");
+		
 		if (null != mapFile) {
 			for (Map.Entry<String, String> entry : mapFile.entrySet()) {
-				if (!entry.getValue().contains(";")) {
-					entry.setValue(entry.getValue() + ";");
-				}
+				myKey = entry.getKey();
+				myValue = entry.getValue();
+				
+				log.info("\t...[debug cleanupMapEntries() - 'INIT' ] myKey:" + myKey + "\tmyValue:" + myValue + "\n");
 
 				if (entry.getKey() == "htmlstyle") {
-					// for each value pair ex. font-size:6q
-					for (String retval : entry.getValue().split(";")) {
-						String newKey = retval.substring(0, retval.indexOf(":"));
-						String newValue = retval.substring(retval.indexOf(":") + 1);
-
-						mapFile.putIfAbsent(newKey, newValue);
-						// log.debug("+ [debug cleanupMapEntries] Key: " + newKey + "\tValue: " +
-						// mapFile.get(newKey));
+					log.info("\t...[debug cleanupMapEntries() - 'htmlstyle']: " + entry.getValue() + "\n------------");
+					String sHtmlStyle = entry.getValue();
+					String newKey = "";
+					String newValue = "";
+					
+					if (sHtmlStyle.contains(";")) {
+						for (String retval : entry.getValue().split(";")) {
+							// each retval...
+							System.out.println("...split retval=" + retval);
+							Integer iend = -1;
+							 newKey = retval.substring(0, retval.indexOf(":"));
+							 newValue = retval.substring(retval.indexOf(":") + 1);
+							
+							if (newValue.contains(";")) {
+								iend = newValue.indexOf(";");
+								if (iend != -1) {
+									newValue = newValue.substring(0, iend);
+								}
+							}
+						}
+					} else {
+						newKey = sHtmlStyle.substring(0, sHtmlStyle.indexOf(":"));
+						newValue = sHtmlStyle.substring(sHtmlStyle.indexOf(":") + 1);
 					}
+					
+					newKey = newKey.trim();
+					newValue = newValue.trim();
+					System.out.println("...(newKey  ):" + newKey + "\n...(newValue):" + newValue + "\n");
+					
+					mapFile.put(newKey, newValue);
+					log.debug("+ [debug cleanupMapEntries] Key: " + newKey + "\tValue: " + mapFile.get(newKey));
+										
 				}
 			}
 		} else {
 			log.error("+ cleanupMapEntries received a 'null' mapFile.");
 		}
+		
 
+		if(mapFile.containsKey("htmlstyle")) {
+			mapFile.remove("htmlstyle");
+		}
+		
 		return mapFile;
 	}
 
