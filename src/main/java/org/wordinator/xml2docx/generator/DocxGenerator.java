@@ -98,7 +98,7 @@ import org.openxmlformats.schemas.wordprocessingml.x2006.main.STStyleType;
 import org.openxmlformats.schemas.wordprocessingml.x2006.main.STTextDirection;
 import org.openxmlformats.schemas.wordprocessingml.x2006.main.STVerticalAlignRun;
 import org.openxmlformats.schemas.wordprocessingml.x2006.main.impl.STOnOffImpl;
-import org.wordinator.xml2docx.MakeDocx;
+//import org.wordinator.xml2docx.MakeDocx;
 import org.wordinator.xml2docx.xwpf.model.XWPFHeaderFooterPolicy;
 
 /**
@@ -433,26 +433,14 @@ public class DocxGenerator {
 				} else if ("section".equals(tagName)) {
 					handleSection(doc, cursor.getObject(), pageSequenceProperties);
 
-				} else if ("tableXXX".equals(tagName)) {
-					log.debug("+ [debug handleBody 'table'");
-					// START building mapTableAdditionalParameters
+				} else if ("table".equals(tagName)) {
+					XWPFTable table = doc.createTable();
+					
 					htmlstyle = cursor.getAttributeText(DocxConstants.QNAME_HTMLSTYLE_ATT);
 					pagebreak = cursor.getAttributeText(DocxConstants.QNAME_PAGEBREAK_ATT);
 	
-					Map<String, String> mapTableAdditionalParameters = new HashMap<String, String>();
-	
-					if (null != htmlstyle) {
-						mapTableAdditionalParameters.put("htmlstyle", htmlstyle);
-					}
-	
-					if (null != pagebreak) {
-						mapTableAdditionalParameters.put("pagebreak", pagebreak);
-					}
-	
-					mapTableAdditionalParameters = cleanupMapEntries(mapTableAdditionalParameters);
-					// END building mapTableAdditionalParameters
+					Map<String, String> mapTableAdditionalParameters = createMapHtmlStyle(htmlstyle, pagebreak);
 					
-					XWPFTable table = doc.createTable();
 					makeTable(table, cursor.getObject(), mapTableAdditionalParameters);
 
 				} else if ("object".equals(tagName)) {
@@ -931,8 +919,6 @@ public class DocxGenerator {
 			mapHtmlStyle = cleanupMapEntries(mapHtmlStyle);
 		}
 
-		log.info("+ [debug] createMapHtmlStyle() - mapHtmlStyle]: " + mapHtmlStyle.toString());
-
 		return mapHtmlStyle;
 	}
 
@@ -1021,11 +1007,6 @@ public class DocxGenerator {
 		String styleId = cursor.getAttributeText(DocxConstants.QNAME_STYLEID_ATT);
 
 		mapParaProperties = cleanupMapEntries(mapParaProperties);
-		if (!StringUtils.isEmpty(mapParaProperties.toString())
-			&& mapParaProperties.toString() != "{}"	
-			) {
-			log.info("+ [debug makeParagraph() After cleanupMapEntries]: " + mapParaProperties.toString());
-		}
 
 		if (null != styleName && null == styleId) {
 			// Look up the style by name:
@@ -1095,17 +1076,17 @@ public class DocxGenerator {
 		
 		Map<String, String> mapRunProperties = mapParaProperties;
 
-		if (StringUtils.isEmpty(mapParaProperties.get("rowFontSize"))) {
-			mapRunProperties.remove("rowFontSize");
-		} else {
-			mapRunProperties.put("rowFontSize", String.valueOf(mapParaProperties.get("rowFontSize")));
-		}
-
-		if (StringUtils.isEmpty(mapRunProperties.get("cellFontSize"))) {
-			mapRunProperties.remove("cellFontSize");
-		} else {
-			mapRunProperties.put("cellFontSize", String.valueOf(mapParaProperties.get("cellFontSize")));			
-		}
+//		if (StringUtils.isEmpty(mapParaProperties.get("rowFontSize"))) {
+//			mapRunProperties.remove("rowFontSize");
+//		} else {
+//			mapRunProperties.put("rowFontSize", String.valueOf(mapParaProperties.get("rowFontSize")));
+//		}
+//
+//		if (StringUtils.isEmpty(mapRunProperties.get("cellFontSize"))) {
+//			mapRunProperties.remove("cellFontSize");
+//		} else {
+//			mapRunProperties.put("cellFontSize", String.valueOf(mapParaProperties.get("cellFontSize")));			
+//		}
 
 		if (mapRunProperties.containsValue("font-size")) {
 			log.debug("+ [debug makeParagraph() BUILT mapRunProperties]: " + mapRunProperties.toString());
@@ -1219,10 +1200,6 @@ public class DocxGenerator {
 	 */
 	private void makeRun(XWPFParagraph para, XmlObject xml, Map<String, String> mapRunProperties)
 			throws DocxGenerationException {
-
-		if (mapRunProperties.containsKey("font-size")) {
-			log.info("+ [DEBUG makeRun() - BEGIN mapRunProperties]: " + mapRunProperties.toString());
-		}
 		
 		XmlCursor cursor = xml.newCursor();
 
@@ -1255,10 +1232,6 @@ public class DocxGenerator {
 					run_fontsize = mapRunProperties.get("cellFontSize");
 				}
 			}
-			
-			if (!StringUtils.isEmpty(run_fontsize)) {
-				log.info("+ [debug makeRun() run_fontsize]: " + run_fontsize);
-			}
 		}
 		
 		/* Eliot's hack... */
@@ -1290,23 +1263,8 @@ public class DocxGenerator {
 		}
 
 		if(!StringUtils.isEmpty(run_fontsize)) {
-			log.info("+ [DEBUG makeRun() - END mapRunProperties stuff]: " + mapRunProperties.toString());
-			run.setFontSize(Integer.valueOf(run_fontsize) * 2);
+			run.setFontSize(Integer.valueOf(run_fontsize));
 		}
-		
-//		if (!StringUtils.isEmpty(run_fontsize)) {
-//		log.info("+ [DEBUG makeRun() - fontsize]: " + run_row_fontsize);
-//			run.setFontSize(Integer.valueOf(run_fontsize) * 2);
-//		}
-//		
-//		if (!StringUtils.isEmpty(run_row_fontsize)) {
-//			run.setFontSize(Integer.valueOf(run_row_fontsize) * 2);
-//		}
-//
-//		if (!StringUtils.isEmpty(run_cell_fontsize)) {
-//			log.info("+ [DEBUG makeRun() - run_cell_fontsize]: " + run_cell_fontsize);
-//			run.setFontSize(Integer.valueOf(run_cell_fontsize) * 2);
-//		}
 		
 		handleFormattingAttributes(run, xml);
 
@@ -1561,18 +1519,10 @@ public class DocxGenerator {
 	 * @param mapFile passed in map return mapFile
 	 */
 	private Map<String, String> cleanupMapEntries(Map<String, String> mapFile) {
-		String myKey = null;
-		String myValue = null;
-		
-		String myStr = mapFile.toString();
 		
 		if (null != mapFile) {
 			for (Map.Entry<String, String> entry : mapFile.entrySet()) {
-				myKey = entry.getKey();
-				myValue = entry.getValue();
 				
-				log.info("\t...[debug cleanupMapEntries() - 'INIT' ] myKey:" + myKey + "\tmyValue:" + myValue + "\n");
-
 				if ("htmlstyle".equals(entry.getKey())) {
 					String sHtmlStyle = entry.getValue();
 					String newKey = "";
@@ -1601,7 +1551,6 @@ public class DocxGenerator {
 					newKey = newKey.trim();
 					newValue = newValue.trim();
 					mapFile.put(newKey, newValue);
-					log.debug("+ [debug cleanupMapEntries()] Key:" + newKey + "\tValue:" + mapFile.get(newKey));
 				}
 			}
 		}
@@ -2207,6 +2156,7 @@ public class DocxGenerator {
 		// explicit values.
 		TableColumnDefinitions colDefs = new TableColumnDefinitions();
 		cursor.toChild(DocxConstants.QNAME_COLS_ELEM);
+		
 		if (cursor.toFirstChild()) {
 			do {
 				TableColumnDefinition colDef = colDefs.newColumnDef();
@@ -2596,34 +2546,30 @@ public class DocxGenerator {
 	 * @throws DocxGenerationException
 	 */
 	private XWPFTableRow makeTableRow(XWPFTable table, XmlObject xml, TableColumnDefinitions colDefs,
-			RowSpanManager rowSpanManager, Map<QName, String> defaults) throws DocxGenerationException {
+			RowSpanManager rowSpanManager, Map<QName, String> defaults
+			) throws DocxGenerationException {
 
+		String dashes = StringUtils.repeat("=", 60);
+		
+		// NOTE: Future, add the table's map parameters to the call parameters for this method.
 		XmlCursor cursor = xml.newCursor();
 		XWPFTableRow row = table.createRow();
 
-		String htmlstyle = "";
-		String rowFontSize = "";
-		htmlstyle = cursor.getAttributeText(DocxConstants.QNAME_HTMLSTYLE_ATT);
+		String rowFontSize = "";		
+		String htmlstyle = cursor.getAttributeText(DocxConstants.QNAME_HTMLSTYLE_ATT);
 
-		if (!htmlstyle.isEmpty()) {
-			Map<String, String> mapRowAdditionalParameters = new HashMap<String, String>();
-			if (!htmlstyle.isEmpty()) {
-				mapRowAdditionalParameters.putIfAbsent("htmlstyle", htmlstyle);
-				mapRowAdditionalParameters = cleanupMapEntries(mapRowAdditionalParameters);
-			}
+		Map<String, String> mapRowAdditionalParameters = new HashMap<String, String>();
 
-			if (null != mapRowAdditionalParameters) {
-				if (mapRowAdditionalParameters.containsKey("font-size")) {
-					// test shows 8q converted to 16; 72q to 144; Therefore: simply double for sz
-					rowFontSize = String.valueOf(Integer.valueOf(mapRowAdditionalParameters.get("font-size")) * 2);
-				}
-
-				if (!rowFontSize.isEmpty()) {
-					log.debug("+ [debug makeTableRow() rowFontSize: " + rowFontSize);
-				}
-			}
+		if (!StringUtils.isEmpty(htmlstyle)) {
+			mapRowAdditionalParameters.put("htmlstyle", htmlstyle);
 		}
 
+		mapRowAdditionalParameters = cleanupMapEntries(mapRowAdditionalParameters);
+		
+		if (mapRowAdditionalParameters.containsKey("font-size")) {
+			rowFontSize = String.valueOf(Integer.valueOf(mapRowAdditionalParameters.get("font-size")));
+		}
+		
 		cursor.push();
 		cursor.toChild(DocxConstants.QNAME_TD_ELEM);
 		int cellCtr = 0;
@@ -2637,7 +2583,6 @@ public class DocxGenerator {
 
 			CTTcPr ctTcPr = cell.getCTTc().addNewTcPr();
 			String align = cursor.getAttributeText(DocxConstants.QNAME_ALIGN_ATT);
-			String cell_htmlstyle_att = cursor.getAttributeText(DocxConstants.QNAME_HTMLSTYLE_ATT);
 			String rotate = cursor.getAttributeText(DocxConstants.QNAME_ROTATE_ATT);
 			String height = cursor.getAttributeText(DocxConstants.QNAME_HEIGHT_ATT);
 			String valign = cursor.getAttributeText(DocxConstants.QNAME_VALIGN_ATT);
@@ -2646,28 +2591,23 @@ public class DocxGenerator {
 			String shade = cursor.getAttributeText(DocxConstants.QNAME_SHADE_ATT);
 
 			String cellFontSize = null;
+			
+			String cell_htmlstyle_att = cursor.getAttributeText(DocxConstants.QNAME_HTMLSTYLE_ATT);
 
-			if (null != rowFontSize) {
+			Map<String, String> mapCellAdditionalParameters = new HashMap<String, String>();
+			
+			if (!StringUtils.isEmpty(rowFontSize)) {
 				cellFontSize = rowFontSize;
 			}
 
-			if (null != cell_htmlstyle_att) {
-				Map<String, String> mapCellAdditionalParameters = new HashMap<String, String>();
+			if (!StringUtils.isEmpty(cell_htmlstyle_att)) {
 
-				if (null != cell_htmlstyle_att) {
-					mapCellAdditionalParameters.putIfAbsent("htmlstyle", htmlstyle);
-					mapCellAdditionalParameters = cleanupMapEntries(mapCellAdditionalParameters);
-				}
+				mapCellAdditionalParameters.put("htmlstyle", cell_htmlstyle_att);
+				mapCellAdditionalParameters = cleanupMapEntries(mapCellAdditionalParameters);
 
-				if (null != mapCellAdditionalParameters.get("font-size")) {
-					cellFontSize = String.valueOf(Integer.valueOf(mapCellAdditionalParameters.get("font-size")) * 2);
-				}
-
-				/*
-				 * if (null != cellFontSize) { // add a paragraph in cell XWPFParagraph
-				 * paragraph = row.getCell(0).addParagraph(); setRun(paragraph.createRun(),
-				 * "Calibri", cellFontSize, "000000" , "zTEXT" , false, false); }
-				 */
+				if (!StringUtils.isEmpty(mapCellAdditionalParameters.get("font-size"))) {
+					cellFontSize = String.valueOf(Integer.valueOf(mapCellAdditionalParameters.get("font-size")));
+				}		
 			}
 
 			setCellBorders(cursor, ctTcPr);
@@ -2866,11 +2806,15 @@ public class DocxGenerator {
 			} else {
 				if (cursor.toChild(DocxConstants.QNAME_P_ELEM)) {
 					do {
-						XWPFParagraph p = cell.addParagraph();
-
+						XWPFParagraph p = cell.addParagraph();						
 						Map<String, String> mapParaParameters = new HashMap<String, String>();
-						mapParaParameters.putIfAbsent("row_fontsize", rowFontSize.toString());
-						mapParaParameters.putIfAbsent("cell_fontsize", cellFontSize.toString());
+						
+						if (!StringUtils.isEmpty(rowFontSize)) {
+							mapParaParameters.put("font-size", rowFontSize);
+						}
+						if (!StringUtils.isEmpty(cellFontSize)) {
+							mapParaParameters.put("font-size", cellFontSize);
+						}
 
 						makeParagraph(p, cursor, mapParaParameters);
 
