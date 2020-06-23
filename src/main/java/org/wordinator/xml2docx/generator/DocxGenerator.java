@@ -916,26 +916,22 @@ public class DocxGenerator {
 	/**
 	 * Returns a map from the contents of the @htmlstring and @pagebreak attributes
 	 */
-	private Map<String, String> createMapHtmlStyle(String htmlstyle, String pagebreak) {
-		//log.debug("+ [debug] createMapHtmlStyle() - BEGIN htmlstyle]: " + htmlstyle);
-		//log.debug("+ [debug] createMapHtmlStyle() - BEGIN pagebreak]: " + pagebreak);
-		
-		
+	private Map<String, String> createMapHtmlStyle(String htmlstyle, String pagebreak) {		
 		Map<String, String> mapHtmlStyle = new HashMap<String, String>();
 
-		if (htmlstyle != "null") {
-			mapHtmlStyle.putIfAbsent("htmlstyle", htmlstyle);
+		if (!StringUtils.isEmpty(htmlstyle)) {
+			mapHtmlStyle.put("htmlstyle", htmlstyle);
 		}
 
-		if (pagebreak != "null") {
-			mapHtmlStyle.putIfAbsent("pagebreak", pagebreak);
+		if (!StringUtils.isEmpty(pagebreak)) {
+			mapHtmlStyle.put("pagebreak", pagebreak);
 		}
 
 		if(null != mapHtmlStyle) {
 			mapHtmlStyle = cleanupMapEntries(mapHtmlStyle);
 		}
 
-		//log.info("+ [debug] createMapHtmlStyle() - mapHtmlStyle]: " + mapHtmlStyle.toString());
+		log.info("+ [debug] createMapHtmlStyle() - mapHtmlStyle]: " + mapHtmlStyle.toString());
 
 		return mapHtmlStyle;
 	}
@@ -959,20 +955,10 @@ public class DocxGenerator {
 				String namespace = cursor.getName().getNamespaceURI();
 
 				if ("p".equals(tagName)) {
-					//log.info("+ DocxGenerator-...-makeHeaderFooter()- do...'p'");
 					XWPFParagraph p = headerFooter.createParagraph();
 
-					String hf_htmlstyle = null;
-					String hf_pagebreak = null;
-					hf_htmlstyle = cursor.getAttributeText(DocxConstants.QNAME_HTMLSTYLE_ATT);
-					hf_pagebreak = cursor.getAttributeText(DocxConstants.QNAME_PAGEBREAK_ATT);
-					
-					if(hf_htmlstyle == null) {
-						hf_htmlstyle = "";
-					}
-					if(hf_pagebreak == null) {
-						hf_pagebreak = "";
-					}
+					String hf_htmlstyle = cursor.getAttributeText(DocxConstants.QNAME_HTMLSTYLE_ATT);
+					String hf_pagebreak = cursor.getAttributeText(DocxConstants.QNAME_PAGEBREAK_ATT);
 					
 					Map<String, String> mapHFAdditionalParameters = createMapHtmlStyle(hf_htmlstyle, hf_pagebreak);
 					makeParagraph(p, cursor, mapHFAdditionalParameters);
@@ -980,24 +966,9 @@ public class DocxGenerator {
 				} else if ("table".equals(tagName)) {
 					log.info("+ DocxGenerator-...-makeHeaderFooter()- do...'table'");
 					XWPFTable table = headerFooter.createTable(0, 0);
-					// Important attributes to manage
-					// building mapTableAdditionalParameters
-					String table_htmlstyle = null;
-					String table_pagebreak = null;
-					table_htmlstyle = cursor.getAttributeText(DocxConstants.QNAME_HTMLSTYLE_ATT);
-					table_pagebreak = cursor.getAttributeText(DocxConstants.QNAME_PAGEBREAK_ATT);
-
-					/*
-					 * Map<String, String> mapTableAdditionalParameters = new HashMap<String,
-					 * String>(); mapTableAdditionalParameters.put("aaa", "zzz");
-					 * 
-					 * if (null != table_htmlstyle) {
-					 * mapTableAdditionalParameters.putIfAbsent("htmlstyle", table_htmlstyle); }
-					 * 
-					 * if (null != table_pagebreak) {
-					 * mapTableAdditionalParameters.putIfAbsent("pagebreak", table_pagebreak); } //
-					 * finished building mapTableAdditionalParameters
-					 */					
+					
+					String table_htmlstyle = cursor.getAttributeText(DocxConstants.QNAME_HTMLSTYLE_ATT);
+					String table_pagebreak = cursor.getAttributeText(DocxConstants.QNAME_PAGEBREAK_ATT);				
 					
 					Map<String, String> mapTableAdditionalParameters = createMapHtmlStyle(table_htmlstyle, table_pagebreak);
 					makeTable(table, cursor.getObject(), mapTableAdditionalParameters);
@@ -1198,10 +1169,8 @@ public class DocxGenerator {
 
 				} else if ("p".equals(tagName)) { // handle nested paragraphs (so DocBook-ish)...
 					//log.debug("+ [debug makeParagraph() do... 'p' (nested)");
-					String p_htmlstyle = null;
-					String p_pagebreak = null;
-					p_htmlstyle = cursor.getAttributeText(DocxConstants.QNAME_HTMLSTYLE_ATT);
-					p_pagebreak = cursor.getAttributeText(DocxConstants.QNAME_PAGEBREAK_ATT);
+					String p_htmlstyle = cursor.getAttributeText(DocxConstants.QNAME_HTMLSTYLE_ATT);
+					String p_pagebreak = cursor.getAttributeText(DocxConstants.QNAME_PAGEBREAK_ATT);
 					Map<String, String> mapHtmlStyle = createMapHtmlStyle(p_htmlstyle, p_pagebreak);
 
 					makeParagraph(para, cursor, mapHtmlStyle);
@@ -1597,8 +1566,6 @@ public class DocxGenerator {
 		
 		String myStr = mapFile.toString();
 		
-		log.debug("\n+ [debug cleanupMapEntries() - myStr]=" + myStr + "\n");
-		
 		if (null != mapFile) {
 			for (Map.Entry<String, String> entry : mapFile.entrySet()) {
 				myKey = entry.getKey();
@@ -1606,8 +1573,7 @@ public class DocxGenerator {
 				
 				log.info("\t...[debug cleanupMapEntries() - 'INIT' ] myKey:" + myKey + "\tmyValue:" + myValue + "\n");
 
-				if (entry.getKey() == "htmlstyle") {
-					log.info("\t...[debug cleanupMapEntries() - 'htmlstyle']: " + entry.getValue() + "\n------------");
+				if ("htmlstyle".equals(entry.getKey())) {
 					String sHtmlStyle = entry.getValue();
 					String newKey = "";
 					String newValue = "";
@@ -1615,7 +1581,7 @@ public class DocxGenerator {
 					if (sHtmlStyle.contains(";")) {
 						for (String retval : entry.getValue().split(";")) {
 							// each retval...
-							System.out.println("...split retval=" + retval);
+							//System.out.println("...split retval=" + retval);
 							Integer iend = -1;
 							 newKey = retval.substring(0, retval.indexOf(":"));
 							 newValue = retval.substring(retval.indexOf(":") + 1);
@@ -1634,18 +1600,12 @@ public class DocxGenerator {
 					
 					newKey = newKey.trim();
 					newValue = newValue.trim();
-					System.out.println("...(newKey  ):" + newKey + "\n...(newValue):" + newValue + "\n");
-					
 					mapFile.put(newKey, newValue);
-					log.debug("+ [debug cleanupMapEntries] Key: " + newKey + "\tValue: " + mapFile.get(newKey));
-										
+					log.debug("+ [debug cleanupMapEntries()] Key:" + newKey + "\tValue:" + mapFile.get(newKey));
 				}
 			}
-		} else {
-			log.error("+ cleanupMapEntries received a 'null' mapFile.");
 		}
 		
-
 		if(mapFile.containsKey("htmlstyle")) {
 			mapFile.remove("htmlstyle");
 		}
@@ -1805,10 +1765,8 @@ public class DocxGenerator {
 
 		log.debug("+ [debug makeFootnote mapRunProperties]: " + mapRunProperties.toString());
 
-		String fn_htmlstyle = null;
-		String fn_pagebreak = null;
-		fn_htmlstyle = cursor.getAttributeText(DocxConstants.QNAME_HTMLSTYLE_ATT);
-		fn_pagebreak = cursor.getAttributeText(DocxConstants.QNAME_PAGEBREAK_ATT);
+		String fn_htmlstyle = cursor.getAttributeText(DocxConstants.QNAME_HTMLSTYLE_ATT);
+		String fn_pagebreak = cursor.getAttributeText(DocxConstants.QNAME_PAGEBREAK_ATT);
 		Map<String, String> mapFNAdditionalParameters = createMapHtmlStyle(fn_htmlstyle, fn_pagebreak);
 
 		XWPFAbstractFootnoteEndnote note = null;
