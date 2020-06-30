@@ -408,39 +408,34 @@ public class DocxGenerator {
 				String pagebreak = null;
 					
 				if ("p".equals(tagName)) {
-
-					//log.debug("+ [debug handleBody 'p'");
-					// START building mapBodyAdditionalParameters
+					XWPFParagraph p = doc.createParagraph();
 					htmlstyle = cursor.getAttributeText(DocxConstants.QNAME_HTMLSTYLE_ATT);
 					pagebreak = cursor.getAttributeText(DocxConstants.QNAME_PAGEBREAK_ATT);
-	
-					Map<String, String> mapParaAdditionalParameters = new HashMap<String, String>();
-	
-					if (!StringUtils.isEmpty(htmlstyle)) {
-						mapParaAdditionalParameters.put("htmlstyle", htmlstyle);
-					}
-	
-					if ( !StringUtils.isEmpty(pagebreak) && "true".equals(pagebreak))	{
-						mapParaAdditionalParameters.put("pagebreak", pagebreak);
-					}
-	
+					
+					Map<String, String> mapParaAdditionalParameters = createMapHtmlStyle(htmlstyle, pagebreak);
 					mapParaAdditionalParameters = cleanupMapEntries(mapParaAdditionalParameters);
-					// END building mapParaAdditionalParameters
-				
-					XWPFParagraph p = doc.createParagraph();
 					makeParagraph(p, cursor, mapParaAdditionalParameters);
 
 				} else if ("section".equals(tagName)) {
 					handleSection(doc, cursor.getObject(), pageSequenceProperties);
 
 				} else if ("table".equals(tagName)) {
-					XWPFTable table = doc.createTable();
+					
+					pagebreak = cursor.getAttributeText(DocxConstants.QNAME_PAGEBREAK_ATT);
+					if(!StringUtils.isEmpty(pagebreak)) {
+						Boolean bPageBreak = Boolean.valueOf(pagebreak);
+						Map<String, String> mapHtmlStyle = new HashMap<String, String>();
+						XWPFParagraph para = doc.createParagraph();
+						para.setPageBreak(bPageBreak);
+						para.setSpacingAfterLines(0);
+						para.setStyle("PageBreakB4Table");
+					}
 					
 					htmlstyle = cursor.getAttributeText(DocxConstants.QNAME_HTMLSTYLE_ATT);
-					pagebreak = cursor.getAttributeText(DocxConstants.QNAME_PAGEBREAK_ATT);
 	
+					XWPFTable table = doc.createTable();
 					Map<String, String> mapTableAdditionalParameters = createMapHtmlStyle(htmlstyle, pagebreak);
-					
+					mapTableAdditionalParameters = cleanupMapEntries(mapTableAdditionalParameters);
 					makeTable(table, cursor.getObject(), mapTableAdditionalParameters);
 
 				} else if ("object".equals(tagName)) {
@@ -623,9 +618,9 @@ public class DocxGenerator {
 				CTPageNumber pageNumber = (sectPr.isSetPgNumType() ? sectPr.getPgNumType() : sectPr.addNewPgNumType());
 				if (null != format) {
 					if ("custom".equals(format)) {
-						// FIXME: Implement translation from XSLT number format values to the equivalent
-						// Word
-						// number formatting values.
+						// FIXME: 
+						// Implement translation from XSLT number format values to the equivalent
+						// Word number formatting values.
 						log.warn("Page number format \"" + format
 								+ "\" not supported. Use Word-specific values. Using \"decimal\"");
 						format = "decimal";
@@ -922,6 +917,7 @@ public class DocxGenerator {
 		return mapHtmlStyle;
 	}
 
+	
 	/**
 	 * Construct the content of a page header or footer
 	 * 
@@ -958,6 +954,7 @@ public class DocxGenerator {
 					
 					Map<String, String> mapTableAdditionalParameters = createMapHtmlStyle(table_htmlstyle, table_pagebreak);
 					makeTable(table, cursor.getObject(), mapTableAdditionalParameters);
+					
 				} else {
 					// There are other body-level things that could go in a footnote but
 					// we aren't worrying about them for now.
@@ -1000,14 +997,12 @@ public class DocxGenerator {
 	private XWPFParagraph makeParagraph(XWPFParagraph para, XmlCursor cursor, Map<String, String> mapParaProperties)
 			throws DocxGenerationException {
 
-		//System.out.println("\n+++ [DEBUG makeParagraph Map]: " + mapParaProperties.toString());
-
 		cursor.push();
 		String styleName = cursor.getAttributeText(DocxConstants.QNAME_STYLE_ATT);
 		String styleId = cursor.getAttributeText(DocxConstants.QNAME_STYLEID_ATT);
 
 		mapParaProperties = cleanupMapEntries(mapParaProperties);
-
+		
 		if (null != styleName && null == styleId) {
 			// Look up the style by name:
 			XWPFStyle style = para.getDocument().getStyles().getStyleWithName(styleName);
@@ -1037,11 +1032,8 @@ public class DocxGenerator {
 		// if (null != mapParaProperties) {
 
 		if (mapParaProperties.containsKey("pagebreak")) {
-			if (mapParaProperties.get("pagebreak") == "true") {
-				para.setPageBreak(true);
-			} else {
-				para.setPageBreak(false);
-			}
+			Boolean bPageBreak = Boolean.valueOf(mapParaProperties.get("pagebreak"));
+			para.setPageBreak(bPageBreak);
 		}
 
 		/* Eliot's (as he says) hack... */
@@ -1069,24 +1061,12 @@ public class DocxGenerator {
 		// would think.
 		String pageBreakBefore = cursor.getAttributeText(DocxConstants.QNAME_PAGE_BREAK_BEFORE_ATT);
 
-		if (null != pageBreakBefore) {
+		if (!StringUtils.isEmpty(pageBreakBefore)) {
 			boolean breakValue = Boolean.valueOf(pageBreakBefore);
 			para.setPageBreak(breakValue);
 		}
 		
 		Map<String, String> mapRunProperties = mapParaProperties;
-
-//		if (StringUtils.isEmpty(mapParaProperties.get("rowFontSize"))) {
-//			mapRunProperties.remove("rowFontSize");
-//		} else {
-//			mapRunProperties.put("rowFontSize", String.valueOf(mapParaProperties.get("rowFontSize")));
-//		}
-//
-//		if (StringUtils.isEmpty(mapRunProperties.get("cellFontSize"))) {
-//			mapRunProperties.remove("cellFontSize");
-//		} else {
-//			mapRunProperties.put("cellFontSize", String.valueOf(mapParaProperties.get("cellFontSize")));			
-//		}
 
 		if (mapRunProperties.containsValue("font-size")) {
 			log.debug("+ [debug makeParagraph() BUILT mapRunProperties]: " + mapRunProperties.toString());
@@ -2052,9 +2032,9 @@ public class DocxGenerator {
 		throw new NotImplementedException("Object handling not implemented");
 		// cursor.push();
 		// cursor.pop();
-
 	}
 
+	
 	// NOT USED; USING Docx template table styles instead.
 //	private void setTableAlign(XWPFTable table, ParagraphAlignment align) {
 //		CTTblPr tblPr = table.getCTTbl().getTblPr(); 
@@ -2077,7 +2057,7 @@ public class DocxGenerator {
 	 */
 	private void makeTable(XWPFTable table, XmlObject xml, Map<String, String> mapAdditionalParameters)
 			throws DocxGenerationException {
-
+		
 		// If the column widths are absolute measurements they can be set on the grid,
 		// but if they are proportional, then they have to be set on at least the first
 		// row's cells. The table grid is not required (it always reflects the
@@ -2191,7 +2171,6 @@ public class DocxGenerator {
 		}
 
 		// Body rows:
-
 		cursor = xml.newCursor();
 
 		if (cursor.toChild(DocxConstants.QNAME_TBODY_ELEM)) {
@@ -2548,8 +2527,6 @@ public class DocxGenerator {
 	private XWPFTableRow makeTableRow(XWPFTable table, XmlObject xml, TableColumnDefinitions colDefs,
 			RowSpanManager rowSpanManager, Map<QName, String> defaults
 			) throws DocxGenerationException {
-
-		String dashes = StringUtils.repeat("=", 60);
 		
 		// NOTE: Future, add the table's map parameters to the call parameters for this method.
 		XmlCursor cursor = xml.newCursor();
@@ -3041,4 +3018,24 @@ public class DocxGenerator {
 		return format;
 	}
 
+	
+	/**
+	 * Use this after locating the proper sectPr..?
+	 */
+	/*
+	private void changeOrientation(CTSectPr section, String orientation) {
+	    CTPageSz pageSize = section.isSetPgSz()? section.getPgSz() : section.addNewPgSz();
+	    
+	    if (orientation.equals("landscape")) {
+	        pageSize.setOrient(STPageOrientation.LANDSCAPE);
+	        pageSize.setW(BigInteger.valueOf(842 * 20));
+	        pageSize.setH(BigInteger.valueOf(595 * 20));
+	    } else {
+	        pageSize.setOrient(STPageOrientation.PORTRAIT);
+	        pageSize.setH(BigInteger.valueOf(842 * 20));
+	        pageSize.setW(BigInteger.valueOf(595 * 20));
+	    }
+	}
+	*/
+	
 }
