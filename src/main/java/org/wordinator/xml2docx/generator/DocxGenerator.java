@@ -419,8 +419,7 @@ public class DocxGenerator {
 				} else if ("section".equals(tagName)) {
 					handleSection(doc, cursor.getObject(), pageSequenceProperties);
 
-				} else if ("table".equals(tagName)) {
-					
+				} else if ("table".equals(tagName)) {					
 					pagebreak = cursor.getAttributeText(DocxConstants.QNAME_PAGEBREAK_ATT);
 					if(!StringUtils.isEmpty(pagebreak)) {
 						Boolean bPageBreak = Boolean.valueOf(pagebreak);
