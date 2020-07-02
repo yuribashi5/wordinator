@@ -421,10 +421,10 @@ public class DocxGenerator {
 
 				} else if ("table".equals(tagName)) {
 					
+					// pagebreak...
 					pagebreak = cursor.getAttributeText(DocxConstants.QNAME_PAGEBREAK_ATT);
 					if(!StringUtils.isEmpty(pagebreak)) {
 						Boolean bPageBreak = Boolean.valueOf(pagebreak);
-						Map<String, String> mapHtmlStyle = new HashMap<String, String>();
 						XWPFParagraph para = doc.createParagraph();
 						para.setPageBreak(bPageBreak);
 						para.setSpacingAfterLines(0);
@@ -1692,8 +1692,6 @@ public class DocxGenerator {
 		XmlCursor cursor = xml.newCursor();
 		String type = cursor.getAttributeText(DocxConstants.QNAME_TYPE_ATT);
 
-		log.debug("+ [debug makeFootnote mapRunProperties]: " + mapRunProperties.toString());
-
 		String fn_htmlstyle = cursor.getAttributeText(DocxConstants.QNAME_HTMLSTYLE_ATT);
 		String fn_pagebreak = cursor.getAttributeText(DocxConstants.QNAME_PAGEBREAK_ATT);
 		Map<String, String> mapFNAdditionalParameters = createMapHtmlStyle(fn_htmlstyle, fn_pagebreak);
@@ -1706,7 +1704,6 @@ public class DocxGenerator {
 		}
 
 		// NOTE: The paragraph is not created with any initial paragraph.
-
 		if (cursor.toFirstChild()) {
 			do {
 				String tagName = cursor.getName().getLocalPart();
