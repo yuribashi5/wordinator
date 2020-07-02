@@ -317,7 +317,7 @@ public class DocxGenerator {
 		this.templateDoc = templateDoc;
 	}
 
-	/*
+	/**
 	 * Generate the DOCX file from the input Simple WP ML document.
 	 * 
 	 * @param xml The XmlObject that holds the Simple WP XML content
@@ -1485,6 +1485,12 @@ public class DocxGenerator {
 		para.getCTP().addNewFldSimple().setInstr("NUMPAGES \\* MERGEFORMAT");
 	}
 
+	/**
+	 * Build a Word TOC at cursor's location
+	 * @param para			current WXPFparagraph para
+	 * @param cursor		current location in input XML file (SWPX)
+	 * @param instr			the Word TOC 'instruction' (ex. TOC &#92;o "1-6" &#92;h &#92;z &#92;u ) 
+	 */
 	private void buildMiniToc(XWPFParagraph para, XmlCursor cursor, String instr) {
 		CTP ctP = para.getCTP();
 		CTSimpleField toc = ctP.addNewFldSimple();
