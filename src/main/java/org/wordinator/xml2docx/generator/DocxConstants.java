@@ -71,6 +71,7 @@ public final class DocxConstants {
 	public static final QName QNAME_RIGHT_ATT = new QName("", "right");
 	public static final QName QNAME_RIGHTINDENT_ATT = new QName("", "rightindent");
 	public static final QName QNAME_ROTATE_ATT = new QName("", "rotate");
+	public static final QName QNAME_ROTATEPG_ATT = new QName("", "rotatepg");
 	public static final QName QNAME_ROWSEP_ATT = new QName("", "rowsep");
 	public static final QName QNAME_ROWSPAN_ATT = new QName("", "rowspan");
 	public static final QName QNAME_SHADE_ATT = new QName("", "shade");

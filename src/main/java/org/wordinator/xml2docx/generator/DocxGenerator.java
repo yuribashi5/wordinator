@@ -412,6 +412,10 @@ public class DocxGenerator {
 					htmlstyle = cursor.getAttributeText(DocxConstants.QNAME_HTMLSTYLE_ATT);
 					pagebreak = cursor.getAttributeText(DocxConstants.QNAME_PAGEBREAK_ATT);
 					
+					if(!StringUtils.isEmpty(cursor.getAttributeText(DocxConstants.QNAME_ROTATEPG_ATT))) {
+						htmlstyle.concat("; " + cursor.getAttributeText(DocxConstants.QNAME_ROTATEPG_ATT));
+					}				
+					
 					Map<String, String> mapParaAdditionalParameters = createMapHtmlStyle(htmlstyle, pagebreak);
 					mapParaAdditionalParameters = cleanupMapEntries(mapParaAdditionalParameters);
 					makeParagraph(p, cursor, mapParaAdditionalParameters);
@@ -420,9 +424,28 @@ public class DocxGenerator {
 					handleSection(doc, cursor.getObject(), pageSequenceProperties);
 
 				} else if ("table".equals(tagName)) {
+					htmlstyle = cursor.getAttributeText(DocxConstants.QNAME_HTMLSTYLE_ATT);
+					pagebreak = cursor.getAttributeText(DocxConstants.QNAME_PAGEBREAK_ATT);
+					
+					if(!StringUtils.isEmpty(cursor.getAttributeText(DocxConstants.QNAME_ROTATEPG_ATT))) {
+						htmlstyle.concat("; " + cursor.getAttributeText(DocxConstants.QNAME_ROTATEPG_ATT));
+					}
+					
+					Map<String, String> mapTableAdditionalParameters = createMapHtmlStyle(htmlstyle, pagebreak);
+					mapTableAdditionalParameters = cleanupMapEntries(mapTableAdditionalParameters);
+					
+					// rotatepg...
+					if(!StringUtils.isEmpty(mapTableAdditionalParameters.values().toString()) 
+							&& "true".equals(mapTableAdditionalParameters.get("rotatepg"))
+						) {
+						CTSectPr sectPr = doc.getDocument().getBody().addNewSectPr();
+						CTPageSz pageSz = sectPr.addNewPgSz();
+						pageSz.setH(BigInteger.valueOf(12240)); //12240 Twips = 12240/20 = 612 pt = 612/72 = 8.5"
+						pageSz.setW(BigInteger.valueOf(15840)); //15840 Twips = 15840/20 = 792 pt = 792/72 = 11"
+
+					}
 					
 					// pagebreak...
-					pagebreak = cursor.getAttributeText(DocxConstants.QNAME_PAGEBREAK_ATT);
 					if(!StringUtils.isEmpty(pagebreak)) {
 						Boolean bPageBreak = Boolean.valueOf(pagebreak);
 						XWPFParagraph para = doc.createParagraph();
@@ -430,12 +453,8 @@ public class DocxGenerator {
 						para.setSpacingAfterLines(0);
 						para.setStyle("PageBreakB4Table");
 					}
-					
-					htmlstyle = cursor.getAttributeText(DocxConstants.QNAME_HTMLSTYLE_ATT);
 	
 					XWPFTable table = doc.createTable();
-					Map<String, String> mapTableAdditionalParameters = createMapHtmlStyle(htmlstyle, pagebreak);
-					mapTableAdditionalParameters = cleanupMapEntries(mapTableAdditionalParameters);
 					makeTable(table, cursor.getObject(), mapTableAdditionalParameters);
 
 				} else if ("object".equals(tagName)) {
@@ -928,6 +947,9 @@ public class DocxGenerator {
 	 */
 	private void makeHeaderFooter(XWPFHeaderFooter headerFooter, XmlObject xml) throws DocxGenerationException {
 		XmlCursor cursor = xml.newCursor();
+		
+		String htmlstyle = null;
+		String pagebreak = null;
 
 		if (cursor.toFirstChild()) {
 			do {
@@ -939,20 +961,28 @@ public class DocxGenerator {
 				if ("p".equals(tagName)) {
 					XWPFParagraph p = headerFooter.createParagraph();
 
-					String hf_htmlstyle = cursor.getAttributeText(DocxConstants.QNAME_HTMLSTYLE_ATT);
-					String hf_pagebreak = cursor.getAttributeText(DocxConstants.QNAME_PAGEBREAK_ATT);
+					htmlstyle = cursor.getAttributeText(DocxConstants.QNAME_HTMLSTYLE_ATT);
+					pagebreak = cursor.getAttributeText(DocxConstants.QNAME_PAGEBREAK_ATT);
 					
-					Map<String, String> mapHFAdditionalParameters = createMapHtmlStyle(hf_htmlstyle, hf_pagebreak);
+					if(!StringUtils.isEmpty(cursor.getAttributeText(DocxConstants.QNAME_ROTATEPG_ATT))) {
+						htmlstyle.concat("; " + cursor.getAttributeText(DocxConstants.QNAME_ROTATEPG_ATT));
+					}
+					
+					Map<String, String> mapHFAdditionalParameters = createMapHtmlStyle(htmlstyle, pagebreak);
 					makeParagraph(p, cursor, mapHFAdditionalParameters);
 
 				} else if ("table".equals(tagName)) {
 					log.info("+ DocxGenerator-...-makeHeaderFooter()- do...'table'");
 					XWPFTable table = headerFooter.createTable(0, 0);
 					
-					String table_htmlstyle = cursor.getAttributeText(DocxConstants.QNAME_HTMLSTYLE_ATT);
-					String table_pagebreak = cursor.getAttributeText(DocxConstants.QNAME_PAGEBREAK_ATT);				
+					htmlstyle = cursor.getAttributeText(DocxConstants.QNAME_HTMLSTYLE_ATT);
+					pagebreak = cursor.getAttributeText(DocxConstants.QNAME_PAGEBREAK_ATT);
 					
-					Map<String, String> mapTableAdditionalParameters = createMapHtmlStyle(table_htmlstyle, table_pagebreak);
+					if(!StringUtils.isEmpty(cursor.getAttributeText(DocxConstants.QNAME_ROTATEPG_ATT))) {
+						htmlstyle.concat("; " + cursor.getAttributeText(DocxConstants.QNAME_ROTATEPG_ATT));
+					}				
+					
+					Map<String, String> mapTableAdditionalParameters = createMapHtmlStyle(htmlstyle, pagebreak);
 					makeTable(table, cursor.getObject(), mapTableAdditionalParameters);
 					
 				} else {
@@ -1130,10 +1160,25 @@ public class DocxGenerator {
 
 				} else if ("p".equals(tagName)) { // handle nested paragraphs (so DocBook-ish)...
 					//log.debug("+ [debug makeParagraph() do... 'p' (nested)");
-					String p_htmlstyle = cursor.getAttributeText(DocxConstants.QNAME_HTMLSTYLE_ATT);
-					String p_pagebreak = cursor.getAttributeText(DocxConstants.QNAME_PAGEBREAK_ATT);
-					Map<String, String> mapHtmlStyle = createMapHtmlStyle(p_htmlstyle, p_pagebreak);
+					String htmlstyle = cursor.getAttributeText(DocxConstants.QNAME_HTMLSTYLE_ATT);
+					String pagebreak = cursor.getAttributeText(DocxConstants.QNAME_PAGEBREAK_ATT);
+					
+					if(!StringUtils.isEmpty(cursor.getAttributeText(DocxConstants.QNAME_ROTATEPG_ATT))) {
+						htmlstyle.concat("; " + cursor.getAttributeText(DocxConstants.QNAME_ROTATEPG_ATT));
+					}
+					
+					Map<String, String> mapHtmlStyle = createMapHtmlStyle(htmlstyle, pagebreak);
 
+					// rotatepg...SHOULD THIS GO HERE?
+//					if(!StringUtils.isEmpty(mapHtmlStyle.values().toString()) 
+//							&& "true".equals(mapHtmlStyle.get("rotatepg"))
+//						) {
+//						CTSectPr sectPr = doc.getDocument().getBody().addNewSectPr();
+//						CTPageSz pageSz = sectPr.addNewPgSz();
+//						pageSz.setH(BigInteger.valueOf(12240)); //12240 Twips = 12240/20 = 612 pt = 612/72 = 8.5"
+//						pageSz.setW(BigInteger.valueOf(15840)); //15840 Twips = 15840/20 = 792 pt = 792/72 = 11"
+//					}
+					
 					makeParagraph(para, cursor, mapHtmlStyle);
 
 				} else {
@@ -1698,9 +1743,14 @@ public class DocxGenerator {
 		XmlCursor cursor = xml.newCursor();
 		String type = cursor.getAttributeText(DocxConstants.QNAME_TYPE_ATT);
 
-		String fn_htmlstyle = cursor.getAttributeText(DocxConstants.QNAME_HTMLSTYLE_ATT);
-		String fn_pagebreak = cursor.getAttributeText(DocxConstants.QNAME_PAGEBREAK_ATT);
-		Map<String, String> mapFNAdditionalParameters = createMapHtmlStyle(fn_htmlstyle, fn_pagebreak);
+		String htmlstyle = cursor.getAttributeText(DocxConstants.QNAME_HTMLSTYLE_ATT);
+		String pagebreak = cursor.getAttributeText(DocxConstants.QNAME_PAGEBREAK_ATT);
+		
+		if(!StringUtils.isEmpty(cursor.getAttributeText(DocxConstants.QNAME_ROTATEPG_ATT))) {
+			htmlstyle.concat("; " + cursor.getAttributeText(DocxConstants.QNAME_ROTATEPG_ATT));
+		}
+		
+		Map<String, String> mapFNAdditionalParameters = createMapHtmlStyle(htmlstyle, pagebreak);
 
 		XWPFAbstractFootnoteEndnote note = null;
 		if ("endnote".equals(type)) {
@@ -2537,6 +2587,10 @@ public class DocxGenerator {
 
 		String rowFontSize = "";		
 		String htmlstyle = cursor.getAttributeText(DocxConstants.QNAME_HTMLSTYLE_ATT);
+		
+		if(!StringUtils.isEmpty(cursor.getAttributeText(DocxConstants.QNAME_ROTATEPG_ATT))) {
+			htmlstyle.concat("; " + cursor.getAttributeText(DocxConstants.QNAME_ROTATEPG_ATT));
+		}
 
 		Map<String, String> mapRowAdditionalParameters = new HashMap<String, String>();
 
